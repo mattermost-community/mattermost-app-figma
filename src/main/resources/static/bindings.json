@@ -1,0 +1,72 @@
+{
+    "type": "ok",
+    "data": [
+            {
+                "location": "/command",
+                "bindings": [
+                    {
+                        "app_id": "spring-boot-example",
+                        "location": "spring-boot-example",
+                        "icon": "icon.png",
+                        "label": "spring-boot-example",
+                        "description": "Hello remote (3rd party) OAuth2 App",
+                        "bindings": [
+                            {
+                                "app_id": "spring-boot-example",
+                                "location": "connect",
+                                "label": "connect",
+                                "submit": {
+                                    "path": "/connect",
+                                    "expand": {
+                                        "oauth2_app": "all"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "form",
+                                "form": {
+                                    "title": "Connect to Google",
+                                    "icon": "icon.png",
+                                    "call": {
+                                        "path": "/connect",
+                                        "expand": {
+                                            "oauth2_app": "all"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "app_id": "spring-boot-example",
+                                "location": "configure",
+                                "label": "configure",
+                                "form": {
+                                    "title": "Configures Google OAuth2 App credentials",
+                                    "icon": "icon.png",
+                                    "submit": {
+                                        "path": "/configure",
+                                        "expand": {
+                                            "acting_user_access_token": "all"
+                                        }
+                                    },
+                                    "fields": [
+                                        {
+                                            "name": "client_id",
+                                            "type": "text",
+                                            "is_required": true,
+                                            "label": "client-id"
+                                        },
+                                        {
+                                            "name": "client_secret",
+                                            "type": "text",
+                                            "is_required": true,
+                                            "label": "client-secret"
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+}
