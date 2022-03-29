@@ -1,5 +1,6 @@
 package com.mattermost.integration.figma.security;
 
+import com.mattermost.integration.figma.input.InputPayload;
 import com.mattermost.integration.figma.security.service.OAuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -29,9 +30,9 @@ public class OAuthController {
     }
 
     @PostMapping("/configure")
-    public String posOauthCreds(@RequestBody String params) {
-        //TODO store client secret in mm storage
-        System.out.println(params);
+    public String posOauthCreds(@RequestBody InputPayload payload) {
+        System.out.println(payload.getContext().getActingUserAccessToken());
+        oAuthService.storeOAuthCreds(payload);
         return "{\"text\":\"yo\"}";
     }
 
