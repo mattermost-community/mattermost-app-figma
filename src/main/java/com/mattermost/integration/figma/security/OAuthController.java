@@ -1,6 +1,7 @@
 package com.mattermost.integration.figma.security;
 
 import com.mattermost.integration.figma.input.InputPayload;
+import com.mattermost.integration.figma.security.dto.FigmaTokenDTO;
 import com.mattermost.integration.figma.security.service.OAuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -24,9 +25,13 @@ public class OAuthController {
     }
 
     @PostMapping("/oauth2/complete")
-    public String postOauthClientSecret(@RequestBody String params) {
-        System.out.println(params);
-        return "\"text\":\"yo\"";
+    public String postOauthClientSecret(@RequestBody InputPayload payload) {
+        System.out.println(payload);
+        FigmaTokenDTO figmaUserToken = oAuthService.getFigmaUserToken(payload);
+
+        //TODO store token
+        oAuthService.storeFigmaUserToken(payload,figmaUserToken);
+        return "{\"text\":\"completed\"}";
     }
 
     @PostMapping("/configure")

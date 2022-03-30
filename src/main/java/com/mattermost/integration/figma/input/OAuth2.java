@@ -9,4 +9,10 @@ public class OAuth2 {
     private String connectUrl;
     @JsonProperty("complete_url")
     private String completeUrl;
+    @JsonProperty("client_id")
+    private String clientId;
+    @JsonProperty("client_secret")
+    private String clientSecret;
+    @JsonProperty("user")
+    private User user;
 }

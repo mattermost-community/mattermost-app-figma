@@ -9,4 +9,8 @@ public class Values{
     private String clientId;
     @JsonProperty("client_secret")
     private String clientSecret;
+    @JsonProperty("code")
+    private String code;
+    @JsonProperty("state")
+    private String state;
 }
