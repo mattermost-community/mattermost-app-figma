@@ -29,5 +29,7 @@ public class Context{
     private OAuth2 oauth2;
     @JsonProperty("acting_user_access_token")
     private String actingUserAccessToken;
+    @JsonProperty("app")
+    private App app;
 
 }

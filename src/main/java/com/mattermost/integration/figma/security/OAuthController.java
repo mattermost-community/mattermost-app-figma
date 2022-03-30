@@ -12,11 +12,6 @@ public class OAuthController {
     @Autowired
     private OAuthService oAuthService;
 
-    @GetMapping("/oauth/callback")
-    public void getCallback(@RequestParam("code") String code, @RequestParam("state") String state) {
-        System.out.println(code + "////" + state);
-    }
-
     @PostMapping("/oauth2/connect")
     public String getOauthForm(@RequestBody String params) {
         System.out.println(params);
@@ -26,11 +21,10 @@ public class OAuthController {
 
     @PostMapping("/oauth2/complete")
     public String postOauthClientSecret(@RequestBody InputPayload payload) {
-        System.out.println(payload);
-        FigmaTokenDTO figmaUserToken = oAuthService.getFigmaUserToken(payload);
 
-        //TODO store token
-        oAuthService.storeFigmaUserToken(payload,figmaUserToken);
+        FigmaTokenDTO figmaUserToken = oAuthService.getFigmaUserToken(payload);
+        oAuthService.storeFigmaUserToken(payload, figmaUserToken);
+
         return "{\"text\":\"completed\"}";
     }
 
@@ -38,7 +32,7 @@ public class OAuthController {
     public String posOauthCreds(@RequestBody InputPayload payload) {
         System.out.println(payload.getContext().getActingUserAccessToken());
         oAuthService.storeOAuthCreds(payload);
-        return "{\"text\":\"yo\"}";
+        return "{\"text\":\"saved\"}";
     }
 
     @PostMapping("/connect")

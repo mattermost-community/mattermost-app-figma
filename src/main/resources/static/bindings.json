@@ -18,6 +18,7 @@
                                 "submit": {
                                     "path": "/connect",
                                     "expand": {
+                                        "app": "all",
                                         "oauth2_app": "all"
                                     }
                                 }

@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 @Controller
 public class ConfigController {
 
-
     @PostMapping("/bindings")
     public String postBindings() {
         return "redirect:/bindings.json";
@@ -18,8 +17,4 @@ public class ConfigController {
         return "redirect:/icon.png";
     }
 
-    @PostMapping(value = {"/send/form", "/send-modal/submit"})
-    public String postForm() {
-        return "redirect:/sendform.json";
-    }
 }
