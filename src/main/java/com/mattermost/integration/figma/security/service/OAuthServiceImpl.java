@@ -27,17 +27,17 @@ public class OAuthServiceImpl implements OAuthService {
 
 
     @Override
-    public String generateUrl(String params) {
-        String clientId = jsonUtils.getJsonValue(params, "client_id").get();
-        String redirect = jsonUtils.getJsonValue(params, "complete_url").get();
-        String state = jsonUtils.getJsonValue(params, "state").get();
+    public String generateUrl(InputPayload payload) {
+        String clientId = payload.getContext().getOauth2().getClientId();
+        String redirect = payload.getContext().getOauth2().getCompleteUrl();
+        String state = payload.getValues().getState();
         String url = String.format("%s/oauth?client_id=%s&redirect_uri=%s&scope=file_read&state=%s&response_type=code", BASE_URL, clientId, redirect, state);
         return url;
     }
 
     @Override
-    public String getConnectUrl(String params) {
-        return jsonUtils.getJsonValue(params, "connect_url").get();
+    public String getConnectUrl(InputPayload payload) {
+        return  payload.getContext().getOauth2().getConnectUrl();
     }
 
     @Override
