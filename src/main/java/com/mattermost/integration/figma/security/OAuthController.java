@@ -13,9 +13,9 @@ public class OAuthController {
     private OAuthService oAuthService;
 
     @PostMapping("/oauth2/connect")
-    public String getOauthForm(@RequestBody String params) {
-        System.out.println(params);
-        String url = oAuthService.generateUrl(params);
+    public String getOauthForm(@RequestBody InputPayload payload) {
+        System.out.println(payload);
+        String url = oAuthService.generateUrl(payload);
         return String.format("{\"type\":\"ok\",\"data\":\"%s\"}", url);
     }
 
@@ -36,9 +36,9 @@ public class OAuthController {
     }
 
     @PostMapping("/connect")
-    public String connect(@RequestBody String params) {
-        System.out.println(params);
-        String url = oAuthService.getConnectUrl(params);
+    public String connect(@RequestBody InputPayload payload) {
+        System.out.println(payload);
+        String url = oAuthService.getConnectUrl(payload);
 
         return String.format("{\"type\":\"ok\",\"text\":\"[Connect](%s) to Figma.\"}", url);
     }

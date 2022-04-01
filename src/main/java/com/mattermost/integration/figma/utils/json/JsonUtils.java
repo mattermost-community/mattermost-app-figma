@@ -16,15 +16,6 @@ public class JsonUtils {
     @Autowired
     private ObjectMapper objectMapper;
 
-    public  Optional<String> getJsonValue(String params, String key) {
-        try {
-            JsonNode node = objectMapper.readTree(params) ;
-            return Optional.of(node.findValue(key).asText());
-        } catch (IOException e) {
-            return Optional.empty();
-        }
-    }
-
     public Optional convertStringToObject(String jsonString, Class type) {
         try {
            return Optional.of(objectMapper.readValue(jsonString, type));
