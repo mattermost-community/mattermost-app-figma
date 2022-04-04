@@ -1,4 +1,4 @@
-package com.mattermost.integration.figma;
+package com.mattermost.integration.figma.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

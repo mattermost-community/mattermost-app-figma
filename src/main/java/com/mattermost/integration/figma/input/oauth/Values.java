@@ -1,4 +1,4 @@
-package com.mattermost.integration.figma.input;
+package com.mattermost.integration.figma.input.oauth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
@@ -13,4 +13,6 @@ public class Values{
     private String code;
     @JsonProperty("state")
     private String state;
+    @JsonProperty("team_id")
+    private String teamId;
 }

@@ -1,4 +1,4 @@
-package com.mattermost.integration.figma.input;
+package com.mattermost.integration.figma.input.oauth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
