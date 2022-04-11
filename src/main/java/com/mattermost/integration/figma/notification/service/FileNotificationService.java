@@ -10,7 +10,9 @@ import com.mattermost.integration.figma.input.file.notification.*;
 import com.mattermost.integration.figma.input.oauth.ActingUser;
 import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
+import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
 import com.mattermost.integration.figma.security.dto.UserDataDto;
+import com.mattermost.integration.figma.security.service.OAuthService;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
@@ -35,28 +37,43 @@ public class FileNotificationService {
     private final KVService kvService;
     private final JsonUtils jsonUtils;
     private final FigmaWebhookService figmaWebhookService;
+    private final OAuthService oAuthService;
 
-    public FileNotificationService(RestTemplate restTemplate, DMMessageService messageService, KVService kvService, JsonUtils jsonUtils, FigmaWebhookService figmaWebhookService) {
+    public FileNotificationService(RestTemplate restTemplate, DMMessageService messageService, KVService kvService, JsonUtils jsonUtils, FigmaWebhookService figmaWebhookService, OAuthService oAuthService) {
         this.restTemplate = restTemplate;
         this.messageService = messageService;
         this.kvService = kvService;
         this.jsonUtils = jsonUtils;
         this.figmaWebhookService = figmaWebhookService;
+        this.oAuthService = oAuthService;
     }
 
-    public String subscribeToFileNotification(InputPayload inputPayload) {
+    public SubscribeToFileNotification subscribeToFileNotification(InputPayload inputPayload) {
         String teamId = inputPayload.getValues().getTeamId();
         if (teamId == null || teamId.isEmpty() || teamId.isBlank()) {
-            throw new IllegalArgumentException("Bad team id. Please recheck");
+            return SubscribeToFileNotification.BAD_TEAM_ID;
         }
 
-        if (!hasFileCommentWebhook(teamId, inputPayload.getContext().getOauth2().getUser().getAccessToken())) {
-            HttpEntity<FileCommentNotificationRequest> request = createFileCommentNotificationRequest(inputPayload);
-            log.debug("File notification request : " + request);
-            log.info("Sending comment request for team with id: " + teamId);
-            return restTemplate.postForEntity(BASE_WEBHOOK_URL, request, String.class).toString();
+        String accessToken = getToken(inputPayload);
+
+        if (hasFileCommentWebhook(teamId, accessToken)) {
+            return SubscribeToFileNotification.WEBHOOK_ALREADY_EXISTS;
         }
-        return null;
+        HttpEntity<FileCommentNotificationRequest> request = createFileCommentNotificationRequest(inputPayload, accessToken);
+        log.debug("File notification request : " + request);
+        log.info("Sending comment request for team with id: " + teamId);
+        restTemplate.postForEntity(BASE_WEBHOOK_URL, request, String.class);
+        return SubscribeToFileNotification.SUBSCRIBED;
+    }
+
+    private String getToken(InputPayload inputPayload) {
+        String refreshToken = inputPayload.getContext().getOauth2().getUser().getRefreshToken();
+        String clientId = inputPayload.getContext().getOauth2().getClientId();
+        String clientSecret = inputPayload.getContext().getOauth2().getClientSecret();
+
+        FigmaOAuthRefreshTokenResponseDTO refreshTokenDTO = oAuthService.refreshToken(clientId, clientSecret, refreshToken);
+        String accessToken = refreshTokenDTO.getAccessToken();
+        return accessToken;
     }
 
     public void saveUserData(InputPayload inputPayload) {
@@ -82,7 +99,7 @@ public class FileNotificationService {
         Context context = fileCommentWebhookResponse.getContext();
         if (!figmaWebhookResponse.getMentions().isEmpty()) {
             figmaWebhookResponse.getMentions().stream().distinct().map((mention ->
-                    getCurrentUserData(mention.getId(), context.getMattermostSiteUrl(), context.getBotAccessToken())))
+                            getCurrentUserData(mention.getId(), context.getMattermostSiteUrl(), context.getBotAccessToken())))
                     .forEach(userData -> sendMessageToSpecificReceiver(context, userData, figmaWebhookResponse));
         }
     }
@@ -97,7 +114,6 @@ public class FileNotificationService {
 
     private boolean hasFileCommentWebhook(String teamId, String figmaToken) {
         TeamWebhookInfoResponseDto teamWebhooks = figmaWebhookService.getTeamWebhooks(teamId, figmaToken);
-        teamWebhooks.getWebhooks().forEach(webhook -> figmaWebhookService.deleteWebhook(webhook.getId(), figmaToken));
         return teamWebhooks.getWebhooks().stream().anyMatch(webhook -> webhook.getEventType().equals(FILE_COMMENT_EVENT_TYPE));
     }
 
@@ -145,10 +161,10 @@ public class FileNotificationService {
         return stringBuilder.toString();
     }
 
-    private HttpEntity<FileCommentNotificationRequest> createFileCommentNotificationRequest(InputPayload inputPayload) {
+    private HttpEntity<FileCommentNotificationRequest> createFileCommentNotificationRequest(InputPayload inputPayload, String token) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", String.format("Bearer %s", inputPayload.getContext().getOauth2().getUser().getAccessToken()));
+        headers.set("Authorization", String.format("Bearer %s", token));
 
         FileCommentNotificationRequest fileCommentNotificationRequest = new FileCommentNotificationRequest();
         fileCommentNotificationRequest.setEventType(FILE_COMMENT_EVENT_TYPE);

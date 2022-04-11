@@ -1,9 +1,10 @@
 {
-  "app_id": "spring-boot-example",
+  "app_id": "figma",
   "version": "0.7.0",
   "icon": "icon.png",
-  "display_name": "I'm an App!",
-  "homepage_url": "https://github.com/mattermost/mattermost-plugin-apps/dev",
+  "display_name": "Figma",
+  "description": "Figma integration",
+  "homepage_url": "https://github.com/prokhorind/mattermost-figma",
   "requested_permissions": [
     "act_as_bot",
     "remote_oauth2",
