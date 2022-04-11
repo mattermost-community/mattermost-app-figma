@@ -5,4 +5,5 @@ import com.mattermost.integration.figma.api.figma.webhook.dto.TeamWebhookInfoRes
 public interface FigmaWebhookService {
 
     TeamWebhookInfoResponseDto getTeamWebhooks(String teamId, String figmaToken);
+    void deleteWebhook(String webhookId, String figmaToken);
 }

@@ -63,7 +63,9 @@
                                         "path": "/subscribe",
                                         "expand": {
                                             "acting_user_access_token": "all",
-                                            "app": "all"
+                                            "app": "all",
+                                            "oauth2_app": "all",
+                                            "oauth2_user": "all"
                                         }
                                     },
                                     "fields": [

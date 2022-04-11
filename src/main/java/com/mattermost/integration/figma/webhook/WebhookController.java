@@ -1,7 +1,6 @@
 package com.mattermost.integration.figma.webhook;
 
 
-import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.input.file.notification.FileCommentWebhookResponse;
 import com.mattermost.integration.figma.notification.service.FileNotificationService;
 import lombok.extern.slf4j.Slf4j;
@@ -25,9 +24,10 @@ public class WebhookController {
 
     @PostMapping("/comment")
     public void comment(@RequestBody FileCommentWebhookResponse response) {
-        if (Objects.nonNull(response) && !response.getEventType().equals("PING")) {
+        System.out.println(response);
+        if (Objects.nonNull(response) && !response.getValues().getData().getEventType().equals("PING")) {
             log.debug("Received webhook from figma: " + response);
-            fileNotificationService.deleteWebhook(response.getWebhookId());
+            fileNotificationService.sendFileNotificationMessageToMM(response);
         }
     }
 }
