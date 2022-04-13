@@ -1,6 +1,6 @@
 package com.mattermost.integration.figma.reply;
 
-import com.mattermost.integration.figma.api.comment.service.PostCommentService;
+import com.mattermost.integration.figma.api.figma.comment.service.CommentService;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
 import com.mattermost.integration.figma.security.service.OAuthService;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReplyController {
 
     @Autowired
-    private PostCommentService postCommentService;
+    private CommentService postCommentService;
     @Autowired
     private OAuthService oAuthService;
 

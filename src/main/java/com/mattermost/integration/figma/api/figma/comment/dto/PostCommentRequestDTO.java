@@ -1,4 +1,4 @@
-package com.mattermost.integration.figma.api.comment.dto;
+package com.mattermost.integration.figma.api.figma.comment.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
