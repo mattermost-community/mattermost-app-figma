@@ -1,13 +1,16 @@
 package com.mattermost.integration.figma.notification.service;
 
+import com.mattermost.integration.figma.api.figma.comment.service.CommentService;
 import com.mattermost.integration.figma.api.figma.webhook.dto.TeamWebhookInfoResponseDto;
 import com.mattermost.integration.figma.api.figma.webhook.service.FigmaWebhookService;
+import com.mattermost.integration.figma.api.mm.dm.component.DMFormMessageCreator;
 import com.mattermost.integration.figma.api.mm.dm.dto.*;
 import com.mattermost.integration.figma.api.mm.dm.service.DMMessageService;
 import com.mattermost.integration.figma.api.mm.kv.KVService;
 import com.mattermost.integration.figma.api.mm.user.MMUserService;
-import com.mattermost.integration.figma.input.file.notification.*;
-import com.mattermost.integration.figma.input.mm.MMUser;
+import com.mattermost.integration.figma.input.figma.notification.*;
+import com.mattermost.integration.figma.input.mm.form.DMFormMessageReply;
+import com.mattermost.integration.figma.input.mm.user.MMUser;
 import com.mattermost.integration.figma.input.oauth.ActingUser;
 import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
@@ -35,6 +38,10 @@ public class FileNotificationService {
     private static final String FILE_COMMENT_EVENT_TYPE = "FILE_COMMENT";
     private static final String REDIRECT_URL = "%s%s?secret=%s";
     private static final String FILE_COMMENT_URL = "/webhook/comment";
+    private static final String FILE_URL = "https://www.figma.com/file/%s";
+    private static final String UNTITLED = "Untitled";
+    private static final String MENTIONED_NOTIFICATION_ROOT = "commented on";
+    private static final String REPLY_NOTIFICATION_ROOT = "replied to you on";
 
     private final RestTemplate restTemplate;
     private final DMMessageService messageService;
@@ -43,8 +50,10 @@ public class FileNotificationService {
     private final FigmaWebhookService figmaWebhookService;
     private final OAuthService oAuthService;
     private final MMUserService mmUserService;
+    private final DMFormMessageCreator formMessageCreator;
+    private final CommentService commentService;
 
-    public FileNotificationService(RestTemplate restTemplate, DMMessageService messageService, KVService kvService, JsonUtils jsonUtils, FigmaWebhookService figmaWebhookService, OAuthService oAuthService, MMUserService mmUserService) {
+    public FileNotificationService(RestTemplate restTemplate, DMMessageService messageService, KVService kvService, JsonUtils jsonUtils, FigmaWebhookService figmaWebhookService, OAuthService oAuthService, MMUserService mmUserService, DMFormMessageCreator formMessageCreator, CommentService commentService) {
         this.restTemplate = restTemplate;
         this.messageService = messageService;
         this.kvService = kvService;
@@ -52,6 +61,8 @@ public class FileNotificationService {
         this.figmaWebhookService = figmaWebhookService;
         this.oAuthService = oAuthService;
         this.mmUserService = mmUserService;
+        this.formMessageCreator = formMessageCreator;
+        this.commentService = commentService;
     }
 
     public SubscribeToFileNotification subscribeToFileNotification(InputPayload inputPayload) {
@@ -96,6 +107,9 @@ public class FileNotificationService {
             UserDataDto newUserData = new UserDataDto();
             newUserData.setTeamIds(new HashSet<>(Collections.singletonList(teamId)));
             newUserData.setMmUserId(inputPayload.getContext().getActingUser().getId());
+            newUserData.setClientSecret(inputPayload.getContext().getOauth2().getClientSecret());
+            newUserData.setRefreshToken(inputPayload.getContext().getOauth2().getUser().getRefreshToken());
+            newUserData.setClientId(inputPayload.getContext().getOauth2().getClientId());
             kvService.put(userId, newUserData, mmSiteUrl, botAccessToken);
         }
     }
@@ -103,28 +117,59 @@ public class FileNotificationService {
     public void sendFileNotificationMessageToMM(FileCommentWebhookResponse fileCommentWebhookResponse) {
         FigmaWebhookResponse figmaWebhookResponse = fileCommentWebhookResponse.getValues().getData();
         Context context = fileCommentWebhookResponse.getContext();
+
+        if (!isBlank(figmaWebhookResponse.getParentId())) {
+            String authorId = sendMessageToCommentAuthor(figmaWebhookResponse, context);
+            figmaWebhookResponse.getMentions().removeIf(mention -> mention.getId().equals(authorId));
+        }
         if (!figmaWebhookResponse.getMentions().isEmpty()) {
             figmaWebhookResponse.getMentions().stream().distinct().map((mention ->
-                            getCurrentUserData(mention.getId(), context.getMattermostSiteUrl(), context.getBotAccessToken())))
-                    .forEach(userData -> sendMessageToSpecificReceiver(context, userData, figmaWebhookResponse));
+                    getCurrentUserData(mention.getId(), context.getMattermostSiteUrl(), context.getBotAccessToken())))
+                    .forEach(userData -> sendMessageToSpecificReceiver(context, userData, figmaWebhookResponse, MENTIONED_NOTIFICATION_ROOT));
         }
     }
 
-    private void sendMessageToSpecificReceiver(Context context, UserDataDto specificUserData, FigmaWebhookResponse figmaWebhookResponse) {
+    private String sendMessageToCommentAuthor(FigmaWebhookResponse figmaWebhookResponse, Context context) {
+        String token = getToken(figmaWebhookResponse, context);
+
+        CommentDto comment = commentService.getCommentById(figmaWebhookResponse.getParentId(), figmaWebhookResponse.getFileKey(), token).get();
+        UserDataDto currentUserData = getCurrentUserData(comment.getUser().getId(), context.getMattermostSiteUrl(), context.getBotAccessToken());
+        sendMessageToSpecificReceiver(context, currentUserData, figmaWebhookResponse, REPLY_NOTIFICATION_ROOT);
+        return comment.getUser().getId();
+    }
+
+    private String getToken(FigmaWebhookResponse figmaWebhookResponse, Context context) {
+        String mmSiteUrl = context.getMattermostSiteUrl();
+        String botAccessToken = context.getBotAccessToken();
+        UserDataDto userDataDto = getCurrentUserData(figmaWebhookResponse.getTriggeredBy().getId(), mmSiteUrl, botAccessToken);
+        FigmaOAuthRefreshTokenResponseDTO figmaOAuthRefreshTokenResponseDTO = oAuthService.refreshToken(userDataDto.getClientId(), userDataDto.getClientSecret(), userDataDto.getRefreshToken());
+        return figmaOAuthRefreshTokenResponseDTO.getAccessToken();
+    }
+
+    private void sendMessageToSpecificReceiver(Context context, UserDataDto specificUserData, FigmaWebhookResponse figmaWebhookResponse, String notificationMessageRoot) {
         context.setActingUser(new ActingUser());
         context.getActingUser().setId(specificUserData.getMmUserId());
         String channelId = messageService.createDMChannel(createDMChannelPayload(context));
 
-        DMMessageWithPropsFields messageWithPropsFields = getMessageWithPropsFields(context, figmaWebhookResponse, channelId);
+        DMMessageWithPropsFields messageWithPropsFields = getMessageWithPropsFields(context, figmaWebhookResponse, channelId, notificationMessageRoot);
         messageService.sendDMMessage(createDMMessageWithPropsPayload(messageWithPropsFields, context.getBotAccessToken(), context.getMattermostSiteUrl()));
     }
 
-    private DMMessageWithPropsFields getMessageWithPropsFields(Context context, FigmaWebhookResponse figmaWebhookResponse, String channelId) {
+    private DMMessageWithPropsFields getMessageWithPropsFields(Context context, FigmaWebhookResponse figmaWebhookResponse,
+                                                               String channelId, String notificationMessageRoot) {
+        String mmSiteUrl = context.getMattermostSiteUrl();
+        String botAccessToken = context.getBotAccessToken();
+
+        UserDataDto userDataDto = getCurrentUserData(figmaWebhookResponse.getTriggeredBy().getId(), mmSiteUrl, botAccessToken);
+        MMUser mmUsers = mmUserService.getUserById(userDataDto.getMmUserId(), mmSiteUrl, botAccessToken);
+
         DMMessageWithPropsFields msg = new DMMessageWithPropsFields();
         msg.setAppId(context.getAppId());
-        msg.setLabel("my label");
+        msg.setLabel(buildLabel(mmUsers.getUsername(), figmaWebhookResponse.getFileName(),
+                figmaWebhookResponse.getFileKey(), notificationMessageRoot));
         msg.setChannelId(channelId);
-        msg.setDescription("my description");
+        msg.setDescription(buildComment(figmaWebhookResponse.getComment(),
+                figmaWebhookResponse.getMentions(), mmSiteUrl, botAccessToken));
         msg.setReplyFileId(figmaWebhookResponse.getFileKey());
         msg.setReplyCommentId(isBlank(figmaWebhookResponse.getParentId()) ? figmaWebhookResponse.getCommentId() : figmaWebhookResponse.getParentId());
         return msg;
@@ -132,6 +177,7 @@ public class FileNotificationService {
 
     private boolean hasFileCommentWebhook(String teamId, String figmaToken) {
         TeamWebhookInfoResponseDto teamWebhooks = figmaWebhookService.getTeamWebhooks(teamId, figmaToken);
+        teamWebhooks.getWebhooks().forEach(webhook -> figmaWebhookService.deleteWebhook(webhook.getId(), figmaToken));
         return teamWebhooks.getWebhooks().stream().anyMatch(webhook -> webhook.getEventType().equals(FILE_COMMENT_EVENT_TYPE));
     }
 
@@ -143,22 +189,12 @@ public class FileNotificationService {
         return new DMChannelPayload(userId, botUserId, botAccessToken, mattermostSiteUrl);
     }
 
-    private DMMessagePayload createDMMessagePayload(String channelId, String botAccessToken,
-                                                    String mmSiteUrl, FigmaWebhookResponse figmaWebhookResponse) {
-        DMMessagePayload message = new DMMessagePayload();
-        message.setChannelId(channelId);
-        message.setMessage(createFileNotificationMessage(figmaWebhookResponse, mmSiteUrl, botAccessToken));
-        message.setToken(botAccessToken);
-        message.setMmSiteUrlBase(mmSiteUrl);
-        return message;
-    }
-
     private DMMessageWithPropsPayload createDMMessageWithPropsPayload(DMMessageWithPropsFields fields, String botAccessToken,
                                                                       String mmSiteUrl) {
 
-        String body = messageService.getMessageWithReplyButton(fields);
+        DMFormMessageReply reply = formMessageCreator.createFormReply(fields);
         DMMessageWithPropsPayload payload = new DMMessageWithPropsPayload();
-        payload.setBody(body);
+        payload.setBody(reply);
         payload.setMmSiteUrl(mmSiteUrl);
         payload.setToken(botAccessToken);
         return payload;
@@ -169,24 +205,22 @@ public class FileNotificationService {
                 botAccessToken), UserDataDto.class).get();
     }
 
-    private String createFileNotificationMessage(FigmaWebhookResponse figmaWebhookResponse, String mmSiteUrl,
-                                                 String botToken) {
-        UserDataDto userDataDto = getCurrentUserData(figmaWebhookResponse.getTriggeredBy().getId(), mmSiteUrl, botToken);
-        MMUser mmUsers = mmUserService.getUserById(userDataDto.getMmUserId(), mmSiteUrl, botToken);
-        return buildComment(mmUsers.getUsername(), figmaWebhookResponse.getFileName(),
-                prepareComment(figmaWebhookResponse.getComment(), figmaWebhookResponse.getMentions(), mmSiteUrl, botToken));
+    private String buildLabel(String author, String fileName, String fileKey, String root) {
+        if (fileName.isBlank()) {
+            fileName = UNTITLED;
+        }
+        return String.format("@%s %s [%s](%s):", author, root, fileName, String.format(FILE_URL, fileKey));
     }
 
-    private String buildComment(String author, String fileName, String comment) {
-        return String.format("@%s posted a new comment in a file \"%s\":\n \"%s\"", author, fileName, comment);
-    }
-
-    private String prepareComment(List<Comment> comments, List<Mention> mentions, String mmSiteUrl,
-                                  String botToken) {
+    private String buildComment(List<Comment> comments, List<Mention> mentions, String mmSiteUrl,
+                                String botToken) {
         List<UserDataDto> userData = mentions.stream().map(mention ->
                 getCurrentUserData(mention.getId(), mmSiteUrl, botToken)).collect(Collectors.toList());
-        List<MMUser> mmUsers = getMMUsersByIds(userData.stream().map(UserDataDto::getMmUserId).collect(Collectors.toList()),
-                mmSiteUrl, botToken);
+        List<String> userIds = userData.stream().map(UserDataDto::getMmUserId).collect(Collectors.toList());
+        List<MMUser> mmUsers = new ArrayList<>();
+        if (!userIds.isEmpty()) {
+            mmUsers = getMMUsersByIds(userIds, mmSiteUrl, botToken);
+        }
 
         StringBuilder stringBuilder = new StringBuilder();
         int mentionCounter = 0;

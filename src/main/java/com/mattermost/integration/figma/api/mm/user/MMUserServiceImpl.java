@@ -1,7 +1,7 @@
 package com.mattermost.integration.figma.api.mm.user;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.mattermost.integration.figma.input.mm.MMUser;
+import com.mattermost.integration.figma.input.mm.user.MMUser;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;

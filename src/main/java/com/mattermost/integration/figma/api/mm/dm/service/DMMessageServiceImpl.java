@@ -1,6 +1,7 @@
 package com.mattermost.integration.figma.api.mm.dm.service;
 
 import com.mattermost.integration.figma.api.mm.dm.dto.*;
+import com.mattermost.integration.figma.input.mm.form.DMFormMessageReply;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -61,51 +62,9 @@ public class DMMessageServiceImpl implements DMMessageService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", String.format("Bearer %s", payload.getToken()));
 
-        HttpEntity<String[]> request = new HttpEntity(payload.getBody(), headers);
+        HttpEntity<DMFormMessageReply> request = new HttpEntity(payload.getBody(), headers);
 
         restTemplate.postForEntity(String.format("%s%s", payload.getMmSiteUrl(), SEND_DM_URL), request, DirectMessageResponseDTO.class);
-    }
-
-
-    @Override
-    public String getMessageWithReplyButton(DMMessageWithPropsFields payload) {
-        String s = "{\"channel_id\":\"%s\"," +
-                "\"props\":" +
-                "{\"app_bindings\":" +
-                "[{" +
-                "\"app_id\":\"%s\"," +
-                "\"label\":\"%s\"," +
-                "\"description\":\"%s\"," +
-                "\"bindings\":" +
-                "[{\"" +
-                "location\":\"my_button\"," +
-                "\"label\":\"Reply\"," +
-                "\"form\":" +
-                "{\"title\":\"Replytoconnent\"," +
-                "\"icon\":\"icon.png\"," +
-                "\"submit\":{\"path\":\"/reply\"," +
-                "\"expand\":" +
-                "{\"acting_user_access_token\":\"all\"," +
-                "\"app\":\"all\",\"oauth2_app\":\"all\"," +
-                "\"oauth2_user\":\"all\"" +
-                        "}}," +
-                "\"fields\":" +
-                "[{\"name\":\"comment_id\"," +
-                "\"type\":\"text\"," +
-                "\"value\":\"%s\"," +
-                "\"is_required\":true," +
-                "\"label\":\"comment_id\"}," +
-                "{\"name\":\"file_id\"," +
-                "\"type\":\"text\"," +
-                "\"value\":\"%s\"," +
-                "\"is_required\":true," +
-                "\"label\":\"file_id\"}," +
-                "{\"name\":\"message\"," +
-                "\"type\":\"text\"," +
-                "\"is_required\":true," +
-                "\"label\":\"message\"" +
-                "}]}}]}]}}";
-        return String.format(s,payload.getChannelId(),payload.getAppId(),payload.getLabel(), payload.getDescription(),payload.getReplyCommentId(),payload.getReplyFileId());
     }
 
 }

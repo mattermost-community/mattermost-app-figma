@@ -1,6 +1,6 @@
 package com.mattermost.integration.figma.api.mm.user;
 
-import com.mattermost.integration.figma.input.mm.MMUser;
+import com.mattermost.integration.figma.input.mm.user.MMUser;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package com.mattermost.integration.figma.input.file.notification;
+package com.mattermost.integration.figma.input.figma.notification;
 
 import lombok.*;
 
@@ -6,4 +6,5 @@ import lombok.*;
 public class User {
     private String id;
     private String handle;
+    private String img_url;
 }

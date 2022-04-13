@@ -1,7 +1,7 @@
 package com.mattermost.integration.figma.webhook;
 
 
-import com.mattermost.integration.figma.input.file.notification.FileCommentWebhookResponse;
+import com.mattermost.integration.figma.input.figma.notification.FileCommentWebhookResponse;
 import com.mattermost.integration.figma.notification.service.FileNotificationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;

@@ -11,7 +11,6 @@ public interface DMMessageService {
     String createDMChannel(InputPayload payload);
     String createDMChannel(DMChannelPayload channelPayload);
     void sendDMMessage(DMMessagePayload messagePayload);
-    String getMessageWithReplyButton(DMMessageWithPropsFields payload);
     void sendDMMessage(DMMessageWithPropsPayload payload);
 
 }

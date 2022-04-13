@@ -1,4 +1,4 @@
-package com.mattermost.integration.figma.input.file.notification;
+package com.mattermost.integration.figma.input.figma.notification;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;

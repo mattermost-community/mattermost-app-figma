@@ -1,4 +1,4 @@
-package com.mattermost.integration.figma.input.file.notification;
+package com.mattermost.integration.figma.input.figma.notification;
 
 import com.mattermost.integration.figma.input.oauth.Context;
 import lombok.Data;
