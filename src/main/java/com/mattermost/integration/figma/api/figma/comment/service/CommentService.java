@@ -8,4 +8,5 @@ import java.util.Optional;
 public interface CommentService {
     List<CommentDto> getCommentsFromFile(String fileKey, String figmaToken);
     Optional<CommentDto> getCommentById(String commentId, String fileKey, String figmaToken);
+    void postComment (String fileId , String replyCommentId , String message ,String token);
 }

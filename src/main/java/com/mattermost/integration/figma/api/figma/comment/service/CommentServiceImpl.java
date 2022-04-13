@@ -1,5 +1,6 @@
 package com.mattermost.integration.figma.api.figma.comment.service;
 
+import com.mattermost.integration.figma.api.figma.comment.dto.PostCommentRequestDTO;
 import com.mattermost.integration.figma.input.figma.notification.CommentDto;
 import com.mattermost.integration.figma.input.figma.notification.CommentResponseDto;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,5 +37,20 @@ public class CommentServiceImpl implements CommentService {
     public Optional<CommentDto> getCommentById(String commentId, String fileKey, String figmaToken) {
         return getCommentsFromFile(fileKey, figmaToken).stream().filter(comment -> comment
                 .getId().equals(commentId)).findFirst();
+    }
+
+    @Override
+    public void postComment(String fileId, String replyCommentId, String message, String token) {
+        String url = String.format(GET_COMMENTS_URL, fileId);
+
+        PostCommentRequestDTO postCommentRequestDTO = new PostCommentRequestDTO();
+        postCommentRequestDTO.setCommentId(replyCommentId);
+        postCommentRequestDTO.setMessage(message);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", String.format("Bearer %s", token));
+
+        HttpEntity request = new HttpEntity(postCommentRequestDTO ,headers);
+        restTemplate.postForEntity(url, request, String.class);
     }
 }

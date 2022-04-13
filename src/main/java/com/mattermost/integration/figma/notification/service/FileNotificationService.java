@@ -177,7 +177,6 @@ public class FileNotificationService {
 
     private boolean hasFileCommentWebhook(String teamId, String figmaToken) {
         TeamWebhookInfoResponseDto teamWebhooks = figmaWebhookService.getTeamWebhooks(teamId, figmaToken);
-        teamWebhooks.getWebhooks().forEach(webhook -> figmaWebhookService.deleteWebhook(webhook.getId(), figmaToken));
         return teamWebhooks.getWebhooks().stream().anyMatch(webhook -> webhook.getEventType().equals(FILE_COMMENT_EVENT_TYPE));
     }
 
