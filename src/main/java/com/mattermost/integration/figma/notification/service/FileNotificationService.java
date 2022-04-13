@@ -2,8 +2,7 @@ package com.mattermost.integration.figma.notification.service;
 
 import com.mattermost.integration.figma.api.figma.webhook.dto.TeamWebhookInfoResponseDto;
 import com.mattermost.integration.figma.api.figma.webhook.service.FigmaWebhookService;
-import com.mattermost.integration.figma.api.mm.dm.dto.DMChannelPayload;
-import com.mattermost.integration.figma.api.mm.dm.dto.DMMessagePayload;
+import com.mattermost.integration.figma.api.mm.dm.dto.*;
 import com.mattermost.integration.figma.api.mm.dm.service.DMMessageService;
 import com.mattermost.integration.figma.api.mm.kv.KVService;
 import com.mattermost.integration.figma.api.mm.user.MMUserService;
@@ -25,6 +24,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.apache.logging.log4j.util.Strings.isBlank;
 
 @Service
 @Slf4j
@@ -113,8 +114,20 @@ public class FileNotificationService {
         context.setActingUser(new ActingUser());
         context.getActingUser().setId(specificUserData.getMmUserId());
         String channelId = messageService.createDMChannel(createDMChannelPayload(context));
-        messageService.sendDMMessage(createDMMessagePayload(channelId, context.getBotAccessToken(),
-                context.getMattermostSiteUrl(), figmaWebhookResponse));
+
+        DMMessageWithPropsFields messageWithPropsFields = getMessageWithPropsFields(context, figmaWebhookResponse, channelId);
+        messageService.sendDMMessage(createDMMessageWithPropsPayload(messageWithPropsFields, context.getBotAccessToken(), context.getMattermostSiteUrl()));
+    }
+
+    private DMMessageWithPropsFields getMessageWithPropsFields(Context context, FigmaWebhookResponse figmaWebhookResponse, String channelId) {
+        DMMessageWithPropsFields msg = new DMMessageWithPropsFields();
+        msg.setAppId(context.getAppId());
+        msg.setLabel("my label");
+        msg.setChannelId(channelId);
+        msg.setDescription("my description");
+        msg.setReplyFileId(figmaWebhookResponse.getFileKey());
+        msg.setReplyCommentId(isBlank(figmaWebhookResponse.getParentId()) ? figmaWebhookResponse.getCommentId() : figmaWebhookResponse.getParentId());
+        return msg;
     }
 
     private boolean hasFileCommentWebhook(String teamId, String figmaToken) {
@@ -138,6 +151,17 @@ public class FileNotificationService {
         message.setToken(botAccessToken);
         message.setMmSiteUrlBase(mmSiteUrl);
         return message;
+    }
+
+    private DMMessageWithPropsPayload createDMMessageWithPropsPayload(DMMessageWithPropsFields fields, String botAccessToken,
+                                                                      String mmSiteUrl) {
+
+        String body = messageService.getMessageWithReplyButton(fields);
+        DMMessageWithPropsPayload payload = new DMMessageWithPropsPayload();
+        payload.setBody(body);
+        payload.setMmSiteUrl(mmSiteUrl);
+        payload.setToken(botAccessToken);
+        return payload;
     }
 
     private UserDataDto getCurrentUserData(String userId, String mmSiteUrl, String botAccessToken) {

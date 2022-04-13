@@ -54,4 +54,58 @@ public class DMMessageServiceImpl implements DMMessageService {
         restTemplate.postForEntity(String.format("%s%s", payload.getMmSiteUrlBase(), SEND_DM_URL), request, DirectMessageResponseDTO.class);
     }
 
+    @Override
+    public void sendDMMessage(DMMessageWithPropsPayload payload) {
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", String.format("Bearer %s", payload.getToken()));
+
+        HttpEntity<String[]> request = new HttpEntity(payload.getBody(), headers);
+
+        restTemplate.postForEntity(String.format("%s%s", payload.getMmSiteUrl(), SEND_DM_URL), request, DirectMessageResponseDTO.class);
+    }
+
+
+    @Override
+    public String getMessageWithReplyButton(DMMessageWithPropsFields payload) {
+        String s = "{\"channel_id\":\"%s\"," +
+                "\"props\":" +
+                "{\"app_bindings\":" +
+                "[{" +
+                "\"app_id\":\"%s\"," +
+                "\"label\":\"%s\"," +
+                "\"description\":\"%s\"," +
+                "\"bindings\":" +
+                "[{\"" +
+                "location\":\"my_button\"," +
+                "\"label\":\"Reply\"," +
+                "\"form\":" +
+                "{\"title\":\"Replytoconnent\"," +
+                "\"icon\":\"icon.png\"," +
+                "\"submit\":{\"path\":\"/reply\"," +
+                "\"expand\":" +
+                "{\"acting_user_access_token\":\"all\"," +
+                "\"app\":\"all\",\"oauth2_app\":\"all\"," +
+                "\"oauth2_user\":\"all\"" +
+                        "}}," +
+                "\"fields\":" +
+                "[{\"name\":\"comment_id\"," +
+                "\"type\":\"text\"," +
+                "\"value\":\"%s\"," +
+                "\"is_required\":true," +
+                "\"label\":\"comment_id\"}," +
+                "{\"name\":\"file_id\"," +
+                "\"type\":\"text\"," +
+                "\"value\":\"%s\"," +
+                "\"is_required\":true," +
+                "\"label\":\"file_id\"}," +
+                "{\"name\":\"message\"," +
+                "\"type\":\"text\"," +
+                "\"is_required\":true," +
+                "\"label\":\"message\"" +
+                "}]}}]}]}}";
+        return String.format(s,payload.getChannelId(),payload.getAppId(),payload.getLabel(), payload.getDescription(),payload.getReplyCommentId(),payload.getReplyFileId());
+    }
+
 }
