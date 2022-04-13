@@ -20,14 +20,14 @@ public class PostCommentServiceImpl implements PostCommentService {
     public void postComment(String fileId, String replyCommentId, String message, String token) {
         String url = String.format(BASE_URL, fileId);
 
-        var postCommentRequestDTO = new PostCommentRequestDTO();
+        PostCommentRequestDTO postCommentRequestDTO = new PostCommentRequestDTO();
         postCommentRequestDTO.setCommentId(replyCommentId);
         postCommentRequestDTO.setMessage(message);
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", String.format("Bearer %s", token));
 
-        var request = new HttpEntity(postCommentRequestDTO ,headers);
+        HttpEntity request = new HttpEntity(postCommentRequestDTO ,headers);
         restTemplate.postForEntity(url, request, String.class);
     }
 }
