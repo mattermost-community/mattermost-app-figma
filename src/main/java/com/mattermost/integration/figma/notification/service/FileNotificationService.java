@@ -42,6 +42,7 @@ public class FileNotificationService {
     private static final String UNTITLED = "Untitled";
     private static final String MENTIONED_NOTIFICATION_ROOT = "commented on";
     private static final String REPLY_NOTIFICATION_ROOT = "replied to you on";
+    private static final String AUTHOR_ID_MATCHED_COMMENTER_ID = "";
 
     private final RestTemplate restTemplate;
     private final DMMessageService messageService;
@@ -102,16 +103,24 @@ public class FileNotificationService {
         UserDataDto currentData = getCurrentUserData(userId, mmSiteUrl, botAccessToken);
         if (Objects.nonNull(currentData.getTeamIds()) && !currentData.getTeamIds().isEmpty()) {
             currentData.getTeamIds().add(teamId);
-            kvService.put(userId, currentData, mmSiteUrl, botAccessToken);
+            updateUserData(inputPayload, currentData);
         } else {
             UserDataDto newUserData = new UserDataDto();
             newUserData.setTeamIds(new HashSet<>(Collections.singletonList(teamId)));
-            newUserData.setMmUserId(inputPayload.getContext().getActingUser().getId());
-            newUserData.setClientSecret(inputPayload.getContext().getOauth2().getClientSecret());
-            newUserData.setRefreshToken(inputPayload.getContext().getOauth2().getUser().getRefreshToken());
-            newUserData.setClientId(inputPayload.getContext().getOauth2().getClientId());
-            kvService.put(userId, newUserData, mmSiteUrl, botAccessToken);
+            updateUserData(inputPayload, newUserData);
         }
+    }
+
+    private void updateUserData(InputPayload inputPayload, UserDataDto currentData) {
+        String userId = inputPayload.getContext().getOauth2().getUser().getUserId();
+        String mmSiteUrl = inputPayload.getContext().getMattermostSiteUrl();
+        String botAccessToken = inputPayload.getContext().getBotAccessToken();
+
+        currentData.setClientId(inputPayload.getContext().getOauth2().getClientId());
+        currentData.setClientSecret(inputPayload.getContext().getOauth2().getClientSecret());
+        currentData.setRefreshToken(inputPayload.getContext().getOauth2().getUser().getRefreshToken());
+        currentData.setMmUserId(inputPayload.getContext().getActingUser().getId());
+        kvService.put(userId, currentData, mmSiteUrl, botAccessToken);
     }
 
     public void sendFileNotificationMessageToMM(FileCommentWebhookResponse fileCommentWebhookResponse) {
@@ -131,8 +140,11 @@ public class FileNotificationService {
 
     private String sendMessageToCommentAuthor(FigmaWebhookResponse figmaWebhookResponse, Context context) {
         String token = getToken(figmaWebhookResponse, context);
-
         CommentDto comment = commentService.getCommentById(figmaWebhookResponse.getParentId(), figmaWebhookResponse.getFileKey(), token).get();
+        if (figmaWebhookResponse.getTriggeredBy().getId().equals(comment.getUser().getId())) {
+            return AUTHOR_ID_MATCHED_COMMENTER_ID;
+        }
+
         UserDataDto currentUserData = getCurrentUserData(comment.getUser().getId(), context.getMattermostSiteUrl(), context.getBotAccessToken());
         sendMessageToSpecificReceiver(context, currentUserData, figmaWebhookResponse, REPLY_NOTIFICATION_ROOT);
         return comment.getUser().getId();
