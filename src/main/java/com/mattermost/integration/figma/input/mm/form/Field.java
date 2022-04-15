@@ -10,5 +10,6 @@ public class Field {
     private String value;
     @JsonProperty("is_required")
     private boolean isRequired;
+    @JsonProperty("modal_label")
     private String label;
 }

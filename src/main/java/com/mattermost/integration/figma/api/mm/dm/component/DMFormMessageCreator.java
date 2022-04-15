@@ -10,14 +10,17 @@ import java.util.*;
 public class DMFormMessageCreator {
     private static final String LOCATION = "my_button";
     private static final String REPLY = "Reply";
-    private static final String ICON = "icon.png";
     private static final String TITLE = "Reply to comment";
     private static final String REPLY_PATH = "/reply";
     private static final String ALL = "all";
     private static final String FIELD_TYPE = "text";
     private static final String COMMENT_ID = "comment_id";
+    private static final String COMMENT_ID_LABEL = "Comment Id";
     private static final String FILE_ID = "file_id";
+    private static final String FILE_ID_LABEL = "File Id";
     private static final String MESSAGE = "message";
+    private static final String MESSAGE_LABEL = "Message";
+    private static final String TEXTAREA = "textarea";
 
     public DMFormMessageReply createFormReply(DMMessageWithPropsFields fields) {
         DMFormMessageReply reply = new DMFormMessageReply();
@@ -52,7 +55,6 @@ public class DMFormMessageCreator {
     private Form prepareSingleForm(DMMessageWithPropsFields fields) {
         Form form = new Form();
         form.setTitle(TITLE);
-        form.setIcon(ICON);
         form.setSubmit(prepareSubmit());
         form.setFields(prepareFields(fields));
         return form;
@@ -75,20 +77,26 @@ public class DMFormMessageCreator {
     }
 
     private List<Field> prepareFields(DMMessageWithPropsFields fields) {
-        Field commentIdField = prepareSingleField(COMMENT_ID, fields.getReplyCommentId(), COMMENT_ID);
-        Field fileIdField = prepareSingleField(FILE_ID, fields.getReplyFileId(), FILE_ID);
-        Field message = prepareSingleField(MESSAGE, "", MESSAGE);
+        Field commentIdField = prepareSingleField(COMMENT_ID, fields.getReplyCommentId(), COMMENT_ID_LABEL);
+        Field fileIdField = prepareSingleField(FILE_ID, fields.getReplyFileId(), FILE_ID_LABEL);
+        Field message = prepareSingleTextAreaField(MESSAGE, "", MESSAGE_LABEL);
 
         return Arrays.asList(commentIdField, fileIdField, message);
     }
 
     private Field prepareSingleField(String name, String value, String label) {
-        Field field = new Field();
+        Field field = new TextField();
         field.setName(name);
         field.setLabel(label);
         field.setValue(value);
         field.setType(FIELD_TYPE);
         field.setRequired(true);
         return field;
+    }
+
+    private TextField prepareSingleTextAreaField(String name, String value, String label) {
+        TextField textField = (TextField) prepareSingleField(name, value, label);
+        textField.setSubType(TEXTAREA);
+        return textField;
     }
 }
