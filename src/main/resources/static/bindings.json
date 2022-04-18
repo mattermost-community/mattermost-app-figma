@@ -54,10 +54,10 @@
                             },
                             {
                                 "app_id": "figma",
-                                "location": "fileNotification",
-                                "label": "fileNotification",
+                                "location": "subscribe",
+                                "label": "subscribe",
                                 "form": {
-                                    "title": "Sends notidication when figma file was commented",
+                                    "title": "Sends notification when figma file was commented",
                                     "icon": "icon.png",
                                     "submit": {
                                         "path": "/subscribe",
