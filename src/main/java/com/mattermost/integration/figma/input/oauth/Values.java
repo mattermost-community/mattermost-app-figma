@@ -15,10 +15,6 @@ public class Values{
     private String state;
     @JsonProperty("team_id")
     private String teamId;
-    @JsonProperty("comment_id")
-    private String commentId;
-    @JsonProperty("file_id")
-    private String fileId;
     @JsonProperty("message")
     private String message;
 }

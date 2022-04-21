@@ -25,6 +25,7 @@ public class FileNotificationController {
         log.info("Subscription to file comment from user with id: " + request.getContext().getUserAgent() + " has come");
         log.debug("Subscription to file comment request: " + request);
 
+        //TODO rewrite logic for updating updating webhook and k/v data
         if (SubscribeToFileNotification.SUBSCRIBED.equals(fileNotificationService.subscribeToFileNotification(request))) {
             fileNotificationService.saveUserData(request);
             return "{\"text\" : \"Success\"}";

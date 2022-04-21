@@ -14,10 +14,6 @@ public class DMFormMessageCreator {
     private static final String REPLY_PATH = "/reply";
     private static final String ALL = "all";
     private static final String FIELD_TYPE = "text";
-    private static final String COMMENT_ID = "comment_id";
-    private static final String COMMENT_ID_LABEL = "Comment Id";
-    private static final String FILE_ID = "file_id";
-    private static final String FILE_ID_LABEL = "File Id";
     private static final String MESSAGE = "message";
     private static final String MESSAGE_LABEL = "Message";
     private static final String TEXTAREA = "textarea";
@@ -55,14 +51,15 @@ public class DMFormMessageCreator {
     private Form prepareSingleForm(DMMessageWithPropsFields fields) {
         Form form = new Form();
         form.setTitle(TITLE);
-        form.setSubmit(prepareSubmit());
-        form.setFields(prepareFields(fields));
+        form.setSubmit(prepareSubmit(fields.getReplyFileId() , fields.getReplyCommentId()));
+        form.setFields(List.of(prepareSingleTextAreaField(MESSAGE, "", MESSAGE_LABEL)));
         return form;
     }
 
-    private Submit prepareSubmit() {
+    private Submit prepareSubmit(String fileId , String commentId) {
+        String replyPath = String.format("%s?fileId=%s&commentId=%s",REPLY_PATH,fileId, commentId);
         Submit submit = new Submit();
-        submit.setPath(REPLY_PATH);
+        submit.setPath(replyPath);
         submit.setExpand(prepareExpand());
         return submit;
     }
@@ -74,14 +71,6 @@ public class DMFormMessageCreator {
         expand.setOauth2App(ALL);
         expand.setOauth2User(ALL);
         return expand;
-    }
-
-    private List<Field> prepareFields(DMMessageWithPropsFields fields) {
-        Field commentIdField = prepareSingleField(COMMENT_ID, fields.getReplyCommentId(), COMMENT_ID_LABEL);
-        Field fileIdField = prepareSingleField(FILE_ID, fields.getReplyFileId(), FILE_ID_LABEL);
-        Field message = prepareSingleTextAreaField(MESSAGE, "", MESSAGE_LABEL);
-
-        return Arrays.asList(commentIdField, fileIdField, message);
     }
 
     private Field prepareSingleField(String name, String value, String label) {
