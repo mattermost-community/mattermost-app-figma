@@ -1,10 +1,12 @@
 package com.mattermost.integration.figma.api.mm.dm.component;
 
 import com.mattermost.integration.figma.api.mm.dm.dto.DMMessageWithPropsFields;
+import com.mattermost.integration.figma.api.mm.dm.dto.DMMessageWithPropsPayload;
 import com.mattermost.integration.figma.input.mm.form.*;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
 
 @Component
 public class DMFormMessageCreator {
@@ -17,6 +19,17 @@ public class DMFormMessageCreator {
     private static final String MESSAGE = "message";
     private static final String MESSAGE_LABEL = "Message";
     private static final String TEXTAREA = "textarea";
+
+    public DMMessageWithPropsPayload createDMMessageWithPropsPayload(DMMessageWithPropsFields fields, String botAccessToken,
+                                                                     String mmSiteUrl) {
+
+        DMFormMessageReply reply = createFormReply(fields);
+        DMMessageWithPropsPayload payload = new DMMessageWithPropsPayload();
+        payload.setBody(reply);
+        payload.setMmSiteUrl(mmSiteUrl);
+        payload.setToken(botAccessToken);
+        return payload;
+    }
 
     public DMFormMessageReply createFormReply(DMMessageWithPropsFields fields) {
         DMFormMessageReply reply = new DMFormMessageReply();
@@ -51,13 +64,13 @@ public class DMFormMessageCreator {
     private Form prepareSingleForm(DMMessageWithPropsFields fields) {
         Form form = new Form();
         form.setTitle(TITLE);
-        form.setSubmit(prepareSubmit(fields.getReplyFileId() , fields.getReplyCommentId()));
+        form.setSubmit(prepareSubmit(fields.getReplyFileId(), fields.getReplyCommentId()));
         form.setFields(List.of(prepareSingleTextAreaField(MESSAGE, "", MESSAGE_LABEL)));
         return form;
     }
 
-    private Submit prepareSubmit(String fileId , String commentId) {
-        String replyPath = String.format("%s?fileId=%s&commentId=%s",REPLY_PATH,fileId, commentId);
+    private Submit prepareSubmit(String fileId, String commentId) {
+        String replyPath = String.format("%s?fileId=%s&commentId=%s", REPLY_PATH, fileId, commentId);
         Submit submit = new Submit();
         submit.setPath(replyPath);
         submit.setExpand(prepareExpand());

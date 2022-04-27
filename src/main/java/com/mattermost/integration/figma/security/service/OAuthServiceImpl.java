@@ -1,6 +1,5 @@
 package com.mattermost.integration.figma.security.service;
 
-import com.mattermost.integration.figma.api.mm.kv.KVService;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
 import com.mattermost.integration.figma.security.dto.FigmaTokenDTO;

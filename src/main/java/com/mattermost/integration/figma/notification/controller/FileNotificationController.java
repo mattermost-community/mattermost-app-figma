@@ -1,8 +1,10 @@
-package com.mattermost.integration.figma.notification.service;
+package com.mattermost.integration.figma.notification.controller;
 
 
-import com.mattermost.integration.figma.api.mm.kv.KVService;
+import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
+import com.mattermost.integration.figma.notification.service.FileNotificationService;
+import com.mattermost.integration.figma.notification.service.SubscribeToFileNotification;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,11 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class FileNotificationController {
     private final FileNotificationService fileNotificationService;
-    private final KVService kvService;
+    private final UserDataKVService userDataKVService;
 
-    public FileNotificationController(FileNotificationService fileNotificationService, KVService kvService) {
+    public FileNotificationController(FileNotificationService fileNotificationService, UserDataKVService userDataKVService) {
         this.fileNotificationService = fileNotificationService;
-        this.kvService = kvService;
+        this.userDataKVService = userDataKVService;
     }
 
     @PostMapping("/subscribe")
@@ -27,9 +29,10 @@ public class FileNotificationController {
 
         //TODO rewrite logic for updating updating webhook and k/v data
         if (SubscribeToFileNotification.SUBSCRIBED.equals(fileNotificationService.subscribeToFileNotification(request))) {
-            fileNotificationService.saveUserData(request);
+            userDataKVService.saveUserData(request);
             return "{\"text\" : \"Success\"}";
         }
+        userDataKVService.saveUserData(request);
         return "{\"text\" : \"You are successfully subscribed to an existing webhook\"}";
     }
 }
