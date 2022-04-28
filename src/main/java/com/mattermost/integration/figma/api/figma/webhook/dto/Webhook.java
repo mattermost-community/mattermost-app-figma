@@ -24,7 +24,7 @@ public class Webhook {
     @JsonProperty("status")
     private String status;
     @JsonProperty("description")
-    private Object description;
+    private String description;
     @JsonProperty("protocol_version")
     private String protocolVersion;
 }

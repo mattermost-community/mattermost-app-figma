@@ -1,6 +1,7 @@
 package com.mattermost.integration.figma.api.mm.dm.service;
 
 import com.mattermost.integration.figma.api.figma.comment.service.CommentService;
+import com.mattermost.integration.figma.api.figma.user.service.FileOwnerService;
 import com.mattermost.integration.figma.api.mm.dm.component.DMFormMessageCreator;
 import com.mattermost.integration.figma.api.mm.dm.dto.DMChannelPayload;
 import com.mattermost.integration.figma.api.mm.dm.dto.DMMessageWithPropsFields;
@@ -32,6 +33,8 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
     private static final String UNTITLED = "Untitled";
     private static final String REPLY_NOTIFICATION_ROOT = "replied to you on";
     private static final String AUTHOR_ID_MATCHED_COMMENTER_ID = "";
+    private static final String FILE_OWNER_ID_MATCHED_COMMENTER_ID = "";
+    private static final String COMMENTED_IN_YOUR_FILE = "commented in your file";
 
     private final MMUserService mmUserService;
     private final DMFormMessageCreator formMessageCreator;
@@ -39,19 +42,21 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
     private final UserDataKVService userDataKVService;
     private final DMMessageService messageService;
     private final OAuthService oAuthService;
+    private final FileOwnerService fileOwnerService;
 
     public DMMessageSenderServiceImpl(MMUserService mmUserService, DMFormMessageCreator formMessageCreator,
                                       CommentService commentService, UserDataKVService userDataKVService,
-                                      DMMessageService messageService, OAuthService oAuthService) {
+                                      DMMessageService messageService, OAuthService oAuthService, FileOwnerService fileOwnerService) {
         this.mmUserService = mmUserService;
         this.formMessageCreator = formMessageCreator;
         this.commentService = commentService;
         this.userDataKVService = userDataKVService;
         this.messageService = messageService;
         this.oAuthService = oAuthService;
+        this.fileOwnerService = fileOwnerService;
     }
 
-    public String sendMessageToCommentAuthor(FigmaWebhookResponse figmaWebhookResponse, Context context) {
+    public String sendMessageToCommentAuthor(FigmaWebhookResponse figmaWebhookResponse, Context context, String fileOwnerId) {
         String token = getToken(figmaWebhookResponse, context);
         CommentDto comment = commentService.getCommentById(figmaWebhookResponse.getParentId(),
                 figmaWebhookResponse.getFileKey(), token).get();
@@ -59,10 +64,25 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
             return AUTHOR_ID_MATCHED_COMMENTER_ID;
         }
 
-        UserDataDto currentUserData = userDataKVService.getUserData(comment.getUser().getId(),
+        if (!fileOwnerId.equals(comment.getUser().getId())) {
+            UserDataDto currentUserData = userDataKVService.getUserData(comment.getUser().getId(),
+                    context.getMattermostSiteUrl(), context.getBotAccessToken());
+            sendMessageToSpecificReceiver(context, currentUserData, figmaWebhookResponse, REPLY_NOTIFICATION_ROOT);
+            return comment.getUser().getId();
+        }
+        return fileOwnerId;
+    }
+
+    public String sendMessageToFileOwner(FigmaWebhookResponse figmaWebhookResponse, Context context) {
+        String fileOwnerId = fileOwnerService.findFileOwnerId(figmaWebhookResponse.getFileKey(),
+                figmaWebhookResponse.getWebhookId(),figmaWebhookResponse.getTriggeredBy().getId(),
                 context.getMattermostSiteUrl(), context.getBotAccessToken());
-        sendMessageToSpecificReceiver(context, currentUserData, figmaWebhookResponse, REPLY_NOTIFICATION_ROOT);
-        return comment.getUser().getId();
+        if (!fileOwnerId.equals(figmaWebhookResponse.getTriggeredBy().getId())) {
+            UserDataDto fileOwnerData = userDataKVService.getUserData(fileOwnerId, context.getMattermostSiteUrl(), context.getBotAccessToken());
+            sendMessageToSpecificReceiver(context, fileOwnerData, figmaWebhookResponse, COMMENTED_IN_YOUR_FILE);
+            return fileOwnerId;
+        }
+        return FILE_OWNER_ID_MATCHED_COMMENTER_ID;
     }
 
     public void sendMessageToSpecificReceiver(Context context, UserDataDto specificUserData,

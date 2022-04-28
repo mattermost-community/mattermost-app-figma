@@ -1,6 +1,7 @@
 package com.mattermost.integration.figma.api.figma.webhook.service;
 
 import com.mattermost.integration.figma.api.figma.webhook.dto.TeamWebhookInfoResponseDto;
+import com.mattermost.integration.figma.api.figma.webhook.dto.Webhook;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -44,5 +45,17 @@ public class FigmaWebhookServiceImpl implements FigmaWebhookService {
 
         restTemplate.exchange(url, HttpMethod.DELETE, request, String.class);
         log.info("Successfully deleted webhook with id: " + webhookId);
+    }
+
+    public Webhook getWebhookById(String webhookId, String figmaToken) {
+        String url = FIGMA_WEBHOOK_URL.concat("/").concat(webhookId);
+
+        HttpHeaders headers = new HttpHeaders();
+
+        headers.set("Authorization", String.format("Bearer %s", figmaToken));
+        HttpEntity<Object> request = new HttpEntity<>(headers);
+
+        ResponseEntity<Webhook> resp = restTemplate.exchange(url, HttpMethod.GET, request, Webhook.class);
+        return resp.getBody();
     }
 }

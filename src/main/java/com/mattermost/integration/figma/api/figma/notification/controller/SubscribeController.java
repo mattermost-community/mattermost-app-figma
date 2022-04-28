@@ -1,10 +1,10 @@
-package com.mattermost.integration.figma.notification.controller;
+package com.mattermost.integration.figma.api.figma.notification.controller;
 
 
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
-import com.mattermost.integration.figma.notification.service.FileNotificationService;
-import com.mattermost.integration.figma.notification.service.SubscribeToFileNotification;
+import com.mattermost.integration.figma.api.figma.notification.service.FileNotificationService;
+import com.mattermost.integration.figma.api.figma.notification.service.SubscribeToFileNotification;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @Slf4j
-public class FileNotificationController {
+public class SubscribeController {
     private final FileNotificationService fileNotificationService;
     private final UserDataKVService userDataKVService;
 
-    public FileNotificationController(FileNotificationService fileNotificationService, UserDataKVService userDataKVService) {
+    public SubscribeController(FileNotificationService fileNotificationService, UserDataKVService userDataKVService) {
         this.fileNotificationService = fileNotificationService;
         this.userDataKVService = userDataKVService;
     }

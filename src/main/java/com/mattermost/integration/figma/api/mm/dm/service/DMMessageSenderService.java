@@ -5,8 +5,10 @@ import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.security.dto.UserDataDto;
 
 public interface DMMessageSenderService {
-    String sendMessageToCommentAuthor(FigmaWebhookResponse figmaWebhookResponse, Context context);
+    String sendMessageToCommentAuthor(FigmaWebhookResponse figmaWebhookResponse, Context context, String fileOwnerId);
 
     void sendMessageToSpecificReceiver(Context context, UserDataDto specificUserData,
                                        FigmaWebhookResponse figmaWebhookResponse, String notificationMessageRoot);
+
+    String sendMessageToFileOwner(FigmaWebhookResponse figmaWebhookResponse, Context context);
 }

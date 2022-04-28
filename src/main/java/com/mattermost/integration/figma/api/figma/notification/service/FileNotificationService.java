@@ -1,4 +1,4 @@
-package com.mattermost.integration.figma.notification.service;
+package com.mattermost.integration.figma.api.figma.notification.service;
 
 import com.mattermost.integration.figma.input.figma.notification.FileCommentWebhookResponse;
 import com.mattermost.integration.figma.input.oauth.InputPayload;

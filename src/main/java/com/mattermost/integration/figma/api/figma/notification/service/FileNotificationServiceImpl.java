@@ -1,4 +1,4 @@
-package com.mattermost.integration.figma.notification.service;
+package com.mattermost.integration.figma.api.figma.notification.service;
 
 import com.mattermost.integration.figma.api.figma.webhook.dto.TeamWebhookInfoResponseDto;
 import com.mattermost.integration.figma.api.figma.webhook.service.FigmaWebhookService;
@@ -64,14 +64,18 @@ public class FileNotificationServiceImpl implements FileNotificationService {
     public void sendFileNotificationMessageToMM(FileCommentWebhookResponse fileCommentWebhookResponse) {
         FigmaWebhookResponse figmaWebhookResponse = fileCommentWebhookResponse.getValues().getData();
         Context context = fileCommentWebhookResponse.getContext();
+        String mattermostSiteUrl = context.getMattermostSiteUrl();
+        String botAccessToken = context.getBotAccessToken();
+
+        String fileOwnerId = dmMessageSenderService.sendMessageToFileOwner(figmaWebhookResponse, context);
+        figmaWebhookResponse.getMentions().removeIf(mention -> mention.getId().equals(fileOwnerId));
 
         if (!isBlank(figmaWebhookResponse.getParentId())) {
-            String authorId = dmMessageSenderService.sendMessageToCommentAuthor(figmaWebhookResponse, context);
+            String authorId = dmMessageSenderService.sendMessageToCommentAuthor(figmaWebhookResponse, context, fileOwnerId);
             figmaWebhookResponse.getMentions().removeIf(mention -> mention.getId().equals(authorId));
         }
         if (!figmaWebhookResponse.getMentions().isEmpty()) {
-            figmaWebhookResponse.getMentions().stream().distinct().map((mention ->
-                    userDataKVService.getUserData(mention.getId(), context.getMattermostSiteUrl(), context.getBotAccessToken())))
+            figmaWebhookResponse.getMentions().stream().distinct().map((mention -> userDataKVService.getUserData(mention.getId(), mattermostSiteUrl, botAccessToken)))
                     .forEach(userData -> dmMessageSenderService.sendMessageToSpecificReceiver(context, userData, figmaWebhookResponse, MENTIONED_NOTIFICATION_ROOT));
         }
     }
