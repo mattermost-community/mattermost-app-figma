@@ -8,7 +8,11 @@ resource "aws_lambda_function" "mattermost_figma_lambda_function" {
   memory_size = 256
   role             = "${aws_iam_role.iam_role_for_lambda.arn}"
   depends_on   = ["aws_s3_bucket_object.figma-jar","aws_cloudwatch_log_group.log_group"]
-
+  environment {
+    variables = {
+      ENCRYPTION_KEY="${var.figma_aws_lambda_encryption_key}"
+    }
+  }
 }
 
 resource "aws_lambda_permission" "mattermost_figma_lambda_function" {

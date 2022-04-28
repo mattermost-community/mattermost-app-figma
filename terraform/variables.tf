@@ -25,3 +25,7 @@ variable "figma_aws_lambda_bucket_key" {
 variable "figma_aws_lambda_bucket" {
   default = "figma-aws-lambda-bucket"
 }
+
+variable "figma_aws_lambda_encryption_key" {
+  default = "mySecretKey"
+}

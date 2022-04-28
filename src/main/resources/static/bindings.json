@@ -65,7 +65,8 @@
                                             "acting_user_access_token": "all",
                                             "app": "all",
                                             "oauth2_app": "all",
-                                            "oauth2_user": "all"
+                                            "oauth2_user": "all",
+                                            "channel": "all"
                                         }
                                     },
                                     "fields": [
