@@ -7,8 +7,6 @@ services:
 
     build:
       context: .
-      args:
-        JAR_FILE: target/figma-0.0.1-SNAPSHOT.jar
       dockerfile: Dockerfile
     ports:
       - '8080:8080'
