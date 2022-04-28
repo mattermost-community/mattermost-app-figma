@@ -15,6 +15,7 @@
 	<description>Matternost integration for Figma</description>
 	<properties>
 		<java.version>11</java.version>
+		<start-class>com.mattermost.integration.figma.FigmaApplication</start-class>
 	</properties>
 	<dependencies>
 		<dependency>
