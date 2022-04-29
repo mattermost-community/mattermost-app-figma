@@ -12,6 +12,7 @@ import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
 import com.mattermost.integration.figma.security.service.OAuthService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -30,14 +31,14 @@ public class FileNotificationServiceImpl implements FileNotificationService {
     private static final String FILE_COMMENT_URL = "/webhook/comment";
     private static final String MENTIONED_NOTIFICATION_ROOT = "commented on";
 
-    private final RestTemplate restTemplate;
+    private final RestTemplate figmaRestTemplate;
     private final FigmaWebhookService figmaWebhookService;
     private final OAuthService oAuthService;
     private final UserDataKVService userDataKVService;
     private final DMMessageSenderService dmMessageSenderService;
 
-    public FileNotificationServiceImpl(RestTemplate restTemplate, FigmaWebhookService figmaWebhookService, OAuthService oAuthService, UserDataKVService userDataKVService, DMMessageSenderService dmMessageSenderService) {
-        this.restTemplate = restTemplate;
+    public FileNotificationServiceImpl(@Qualifier("figmaRestTemplate") RestTemplate figmaRestTemplate, FigmaWebhookService figmaWebhookService, OAuthService oAuthService, UserDataKVService userDataKVService, DMMessageSenderService dmMessageSenderService) {
+        this.figmaRestTemplate = figmaRestTemplate;
         this.figmaWebhookService = figmaWebhookService;
         this.oAuthService = oAuthService;
         this.userDataKVService = userDataKVService;
@@ -57,7 +58,7 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         HttpEntity<FileCommentNotificationRequest> request = createFileCommentNotificationRequest(inputPayload, accessToken);
         log.debug("File notification request : " + request);
         log.info("Sending comment request for team with id: " + teamId);
-        restTemplate.postForEntity(BASE_WEBHOOK_URL, request, String.class);
+        figmaRestTemplate.postForEntity(BASE_WEBHOOK_URL, request, String.class);
         return SubscribeToFileNotification.SUBSCRIBED;
     }
 

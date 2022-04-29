@@ -7,6 +7,7 @@ import com.mattermost.integration.figma.security.dto.OAuthCredsDTO;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -24,7 +25,12 @@ public class OAuthServiceImpl implements OAuthService {
     private JsonUtils jsonUtils;
 
     @Autowired
-    private RestTemplate restTemplate;
+    @Qualifier("figmaRestTemplate")
+    private RestTemplate figmaRestTemplate;
+
+    @Autowired
+    @Qualifier("mmRestTemplate")
+    private RestTemplate mmRestTemplate;
 
     @Override
     public String generateUrl(InputPayload payload) {
@@ -56,7 +62,7 @@ public class OAuthServiceImpl implements OAuthService {
 
         HttpEntity<OAuthCredsDTO> request = new HttpEntity<>(credsDTO, headers);
         log.info("Sending request to store OauthCreds for client with id: " + clientId);
-        ResponseEntity<String> resp = restTemplate.postForEntity(String.format("%s%s", mmSiteUrlBase, STORE_CREDS_URL), request, String.class);
+        ResponseEntity<String> resp = mmRestTemplate.postForEntity(String.format("%s%s", mmSiteUrlBase, STORE_CREDS_URL), request, String.class);
         log.info("Successfully stored creds");
     }
 
@@ -68,7 +74,7 @@ public class OAuthServiceImpl implements OAuthService {
         String code = payload.getValues().getCode();
         String url = String.format("%s/api/oauth/token?client_id=%s&client_secret=%s&redirect_uri=%s&code=%s&grant_type=authorization_code", BASE_URL, clientId, clientSecret, redirectUrl, code);
         log.info("Sending request to get figma token for client with id " + clientId);
-        ResponseEntity<String> resp = restTemplate.postForEntity(url, null, String.class);
+        ResponseEntity<String> resp = figmaRestTemplate.postForEntity(url, null, String.class);
         FigmaTokenDTO token = (FigmaTokenDTO) jsonUtils.convertStringToObject(resp.getBody(), FigmaTokenDTO.class).get();
         log.info("Successfully received token");
         return token;
@@ -85,7 +91,7 @@ public class OAuthServiceImpl implements OAuthService {
         HttpEntity<OAuthCredsDTO> request = new HttpEntity(tokenDTO, headers);
         log.info("Sending request to store figmaUserToken for client with id: " + payload.getContext().getOauth2()
                 .getClientId());
-        restTemplate.postForEntity(url, request, String.class);
+        mmRestTemplate.postForEntity(url, request, String.class);
         log.info("Successfully stored token");
     }
 
@@ -93,7 +99,7 @@ public class OAuthServiceImpl implements OAuthService {
     public FigmaOAuthRefreshTokenResponseDTO refreshToken(String clientId, String clientSecret, String refreshToken) {
         String url = String.format("%s?client_id=%s&client_secret=%s&refresh_token=%s", REFRESH_TOKEN_URL, clientId, clientSecret, refreshToken);
 
-        ResponseEntity<String> resp = restTemplate.exchange(url, HttpMethod.POST, ResponseEntity.EMPTY, String.class);
+        ResponseEntity<String> resp = figmaRestTemplate.exchange(url, HttpMethod.POST, ResponseEntity.EMPTY, String.class);
 
         return (FigmaOAuthRefreshTokenResponseDTO) jsonUtils.convertStringToObject(resp.getBody(), FigmaOAuthRefreshTokenResponseDTO.class).get();
     }

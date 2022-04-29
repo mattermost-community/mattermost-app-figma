@@ -4,6 +4,7 @@ import com.mattermost.integration.figma.api.figma.webhook.dto.TeamWebhookInfoRes
 import com.mattermost.integration.figma.api.figma.webhook.dto.Webhook;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -20,6 +21,7 @@ public class FigmaWebhookServiceImpl implements FigmaWebhookService {
     private static final String FIGMA_WEBHOOK_URL = "https://api.figma.com/v2/webhooks";
 
     @Autowired
+    @Qualifier("figmaRestTemplate")
     private RestTemplate restTemplate;
 
     @Override
