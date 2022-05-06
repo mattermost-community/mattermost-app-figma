@@ -1,8 +1,8 @@
 package com.mattermost.integration.figma.api.figma.user.service;
 
 import com.mattermost.integration.figma.api.figma.user.service.dto.FileOwnerResponseDto;
-import com.mattermost.integration.figma.api.figma.webhook.dto.Webhook;
 import com.mattermost.integration.figma.api.figma.webhook.service.FigmaWebhookService;
+import com.mattermost.integration.figma.api.mm.kv.KVService;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
 import com.mattermost.integration.figma.security.dto.UserDataDto;
@@ -15,9 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Collection;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class FileOwnerServiceImpl implements FileOwnerService {
@@ -30,18 +28,20 @@ public class FileOwnerServiceImpl implements FileOwnerService {
     private final JsonUtils jsonUtils;
     private final OAuthService oAuthService;
     private final FigmaWebhookService figmaWebhookService;
+    private final KVService kvService;
 
-    public FileOwnerServiceImpl(UserDataKVService userDataKVService, RestTemplate restTemplate, JsonUtils jsonUtils, OAuthService oAuthService, FigmaWebhookService figmaWebhookService) {
+    public FileOwnerServiceImpl(UserDataKVService userDataKVService, RestTemplate restTemplate, JsonUtils jsonUtils, OAuthService oAuthService, FigmaWebhookService figmaWebhookService, KVService kvService) {
         this.userDataKVService = userDataKVService;
         this.restTemplate = restTemplate;
         this.jsonUtils = jsonUtils;
         this.oAuthService = oAuthService;
         this.figmaWebhookService = figmaWebhookService;
+        this.kvService = kvService;
     }
 
     @Override
     public String findFileOwnerId(String fileKey, String webhookId, String figmaUserId, String mmSiteUrl, String botAccessToken) {
-        String teamId = getCurrentUserTeamId(figmaUserId, webhookId, mmSiteUrl, botAccessToken);
+        String teamId = getCurrentUserTeamId(webhookId, mmSiteUrl, botAccessToken);
         Set<String> userIds = userDataKVService.getUserIdsByTeamId(teamId, mmSiteUrl, botAccessToken);
         for (String userId : userIds) {
             UserDataDto currentUserData = userDataKVService.getUserData(userId, mmSiteUrl, botAccessToken);
@@ -77,8 +77,9 @@ public class FileOwnerServiceImpl implements FileOwnerService {
         return refreshTokenDTO.getAccessToken();
     }
 
-    private String getCurrentUserTeamId(String currentUserId, String webhookId, String mmSiteUrl, String botAccessToken) {
-        String accessToken = getToken(userDataKVService.getUserData(currentUserId, mmSiteUrl, botAccessToken));
+    private String getCurrentUserTeamId(String webhookId, String mmSiteUrl, String botAccessToken) {
+        String webhookOwnerId = kvService.get(webhookId, mmSiteUrl, botAccessToken);
+        String accessToken = getToken(userDataKVService.getUserData(webhookOwnerId, mmSiteUrl, botAccessToken));
         return figmaWebhookService.getWebhookById(webhookId, accessToken).getTeamId();
     }
 

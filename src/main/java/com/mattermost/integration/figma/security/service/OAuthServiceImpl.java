@@ -1,9 +1,12 @@
 package com.mattermost.integration.figma.security.service;
 
+import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
+import com.mattermost.integration.figma.input.oauth.User;
 import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
 import com.mattermost.integration.figma.security.dto.FigmaTokenDTO;
 import com.mattermost.integration.figma.security.dto.OAuthCredsDTO;
+import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +34,9 @@ public class OAuthServiceImpl implements OAuthService {
     @Autowired
     @Qualifier("mmRestTemplate")
     private RestTemplate mmRestTemplate;
+
+    @Autowired
+    private UserDataKVService userDataKVService;
 
     @Override
     public String generateUrl(InputPayload payload) {
@@ -92,6 +98,8 @@ public class OAuthServiceImpl implements OAuthService {
         log.info("Sending request to store figmaUserToken for client with id: " + payload.getContext().getOauth2()
                 .getClientId());
         mmRestTemplate.postForEntity(url, request, String.class);
+        payload.getContext().getOauth2().setUser(new User(null, 0, tokenDTO.getRefreshToken(), tokenDTO.getUserId()));
+        userDataKVService.storePrimaryUserData(payload, new UserDataDto());
         log.info("Successfully stored token");
     }
 

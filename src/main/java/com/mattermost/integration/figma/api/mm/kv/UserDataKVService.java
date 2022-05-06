@@ -11,4 +11,6 @@ public interface UserDataKVService {
     void saveUserData(InputPayload inputPayload);
 
     Set<String> getUserIdsByTeamId(String teamId, String mmSiteUrl, String botAccessToken);
+
+    public void storePrimaryUserData(InputPayload inputPayload, UserDataDto currentData);
 }

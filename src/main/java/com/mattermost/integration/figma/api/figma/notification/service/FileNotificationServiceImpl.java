@@ -1,8 +1,10 @@
 package com.mattermost.integration.figma.api.figma.notification.service;
 
 import com.mattermost.integration.figma.api.figma.webhook.dto.TeamWebhookInfoResponseDto;
+import com.mattermost.integration.figma.api.figma.webhook.dto.Webhook;
 import com.mattermost.integration.figma.api.figma.webhook.service.FigmaWebhookService;
 import com.mattermost.integration.figma.api.mm.dm.service.DMMessageSenderService;
+import com.mattermost.integration.figma.api.mm.kv.KVService;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.input.figma.notification.FigmaWebhookResponse;
 import com.mattermost.integration.figma.input.figma.notification.FileCommentNotificationRequest;
@@ -11,11 +13,13 @@ import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
 import com.mattermost.integration.figma.security.service.OAuthService;
+import com.mattermost.integration.figma.utils.json.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -36,13 +40,17 @@ public class FileNotificationServiceImpl implements FileNotificationService {
     private final OAuthService oAuthService;
     private final UserDataKVService userDataKVService;
     private final DMMessageSenderService dmMessageSenderService;
+    private final KVService kvService;
+    private final JsonUtils jsonUtils;
 
-    public FileNotificationServiceImpl(@Qualifier("figmaRestTemplate") RestTemplate figmaRestTemplate, FigmaWebhookService figmaWebhookService, OAuthService oAuthService, UserDataKVService userDataKVService, DMMessageSenderService dmMessageSenderService) {
+    public FileNotificationServiceImpl(@Qualifier("figmaRestTemplate") RestTemplate figmaRestTemplate, FigmaWebhookService figmaWebhookService, OAuthService oAuthService, UserDataKVService userDataKVService, DMMessageSenderService dmMessageSenderService, KVService kvService, JsonUtils jsonUtils) {
         this.figmaRestTemplate = figmaRestTemplate;
         this.figmaWebhookService = figmaWebhookService;
         this.oAuthService = oAuthService;
         this.userDataKVService = userDataKVService;
         this.dmMessageSenderService = dmMessageSenderService;
+        this.kvService = kvService;
+        this.jsonUtils = jsonUtils;
     }
 
     public SubscribeToFileNotification subscribeToFileNotification(InputPayload inputPayload) {
@@ -51,14 +59,19 @@ public class FileNotificationServiceImpl implements FileNotificationService {
             return SubscribeToFileNotification.BAD_TEAM_ID;
         }
 
+        String mmSiteUrl = inputPayload.getContext().getMattermostSiteUrl();
+        String botAccessToken = inputPayload.getContext().getBotAccessToken();
+
         String accessToken = getToken(inputPayload);
 
-        deleteExistingFileCommentWebhook(teamId, accessToken);
+        deleteExistingFileCommentWebhook(teamId, accessToken, mmSiteUrl, botAccessToken);
 
         HttpEntity<FileCommentNotificationRequest> request = createFileCommentNotificationRequest(inputPayload, accessToken);
         log.debug("File notification request : " + request);
         log.info("Sending comment request for team with id: " + teamId);
-        figmaRestTemplate.postForEntity(BASE_WEBHOOK_URL, request, String.class);
+        ResponseEntity<String> stringResponseEntity = figmaRestTemplate.postForEntity(BASE_WEBHOOK_URL, request, String.class);
+        Webhook webhook = (Webhook) jsonUtils.convertStringToObject(stringResponseEntity.getBody(), Webhook.class).get();
+        kvService.put(webhook.getId(), inputPayload.getContext().getOauth2().getUser().getUserId(), mmSiteUrl, botAccessToken);
         return SubscribeToFileNotification.SUBSCRIBED;
     }
 
@@ -90,10 +103,13 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         return refreshTokenDTO.getAccessToken();
     }
 
-    private void deleteExistingFileCommentWebhook(String teamId, String figmaToken) {
+    private void deleteExistingFileCommentWebhook(String teamId, String figmaToken, String mmSiteUrl, String botAccessToken) {
         TeamWebhookInfoResponseDto teamWebhooks = figmaWebhookService.getTeamWebhooks(teamId, figmaToken);
         teamWebhooks.webhooks.stream().filter(webhook -> FILE_COMMENT_EVENT_TYPE.equals(webhook.getEventType()))
-                .forEach(webhook -> figmaWebhookService.deleteWebhook(webhook.getId(), figmaToken));
+                .forEach(webhook -> {
+                    figmaWebhookService.deleteWebhook(webhook.getId(), figmaToken);
+                    kvService.delete(webhook.getId(), mmSiteUrl, botAccessToken);
+                });
     }
 
     private HttpEntity<FileCommentNotificationRequest> createFileCommentNotificationRequest(InputPayload inputPayload, String token) {

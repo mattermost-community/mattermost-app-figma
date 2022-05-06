@@ -34,6 +34,9 @@ public class UserDataKVServiceImpl implements UserDataKVService {
     public UserDataDto getUserData(String userId, String mmSiteUrl, String botAccessToken) {
         UserDataDto currentUserData = (UserDataDto) jsonUtils.convertStringToObject(kvService.get(userId, mmSiteUrl,
                 botAccessToken), UserDataDto.class).get();
+        if (Objects.isNull(currentUserData.getClientSecret()) || Objects.isNull(currentUserData.getRefreshToken())) {
+            return currentUserData;
+        }
         try {
             currentUserData.setClientSecret(dataEncryptionService.decrypt(currentUserData.getClientSecret()));
             currentUserData.setRefreshToken(dataEncryptionService.decrypt(currentUserData.getRefreshToken()));
@@ -59,11 +62,11 @@ public class UserDataKVServiceImpl implements UserDataKVService {
         UserDataDto currentData = getUserData(userId, mmSiteUrl, botAccessToken);
         if (Objects.nonNull(currentData.getTeamIds()) && !currentData.getTeamIds().isEmpty()) {
             currentData.getTeamIds().add(teamId);
-            updateUserData(inputPayload, currentData);
+            storePrimaryUserData(inputPayload, currentData);
         } else {
             UserDataDto newUserData = new UserDataDto();
             newUserData.setTeamIds(new HashSet<>(Collections.singletonList(teamId)));
-            updateUserData(inputPayload, newUserData);
+            storePrimaryUserData(inputPayload, newUserData);
         }
 
         Set<String> userIds = getUserIdsByTeamId(teamId, mmSiteUrl, botAccessToken);
@@ -75,7 +78,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
         kvService.put(teamId, userIds, mmSiteUrl, botAccessToken);
     }
 
-    private void updateUserData(InputPayload inputPayload, UserDataDto currentData) {
+    public void storePrimaryUserData(InputPayload inputPayload, UserDataDto currentData) {
         String userId = inputPayload.getContext().getOauth2().getUser().getUserId();
         String mmSiteUrl = inputPayload.getContext().getMattermostSiteUrl();
         String botAccessToken = inputPayload.getContext().getBotAccessToken();
