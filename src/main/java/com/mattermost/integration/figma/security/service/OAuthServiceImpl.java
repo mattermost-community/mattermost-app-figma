@@ -100,6 +100,8 @@ public class OAuthServiceImpl implements OAuthService {
         mmRestTemplate.postForEntity(url, request, String.class);
         payload.getContext().getOauth2().setUser(new User(null, 0, tokenDTO.getRefreshToken(), tokenDTO.getUserId()));
         userDataKVService.storePrimaryUserData(payload, new UserDataDto());
+        userDataKVService.saveNewUserToAllUserIdsSet(tokenDTO.getUserId(), payload.getContext().getMattermostSiteUrl(),
+                payload.getContext().getBotAccessToken());
         log.info("Successfully stored token");
     }
 

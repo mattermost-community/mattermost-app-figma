@@ -77,7 +77,7 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
         String fileOwnerId = fileOwnerService.findFileOwnerId(figmaWebhookResponse.getFileKey(),
                 figmaWebhookResponse.getWebhookId(),figmaWebhookResponse.getTriggeredBy().getId(),
                 context.getMattermostSiteUrl(), context.getBotAccessToken());
-        if (!fileOwnerId.equals(figmaWebhookResponse.getTriggeredBy().getId())) {
+        if (!figmaWebhookResponse.getTriggeredBy().getId().equals(fileOwnerId)) {
             UserDataDto fileOwnerData = userDataKVService.getUserData(fileOwnerId, context.getMattermostSiteUrl(), context.getBotAccessToken());
             sendMessageToSpecificReceiver(context, fileOwnerData, figmaWebhookResponse, COMMENTED_IN_YOUR_FILE);
             return fileOwnerId;

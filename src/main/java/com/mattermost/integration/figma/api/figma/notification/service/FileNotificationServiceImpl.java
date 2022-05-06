@@ -80,6 +80,11 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         Context context = fileCommentWebhookResponse.getContext();
         String mattermostSiteUrl = context.getMattermostSiteUrl();
         String botAccessToken = context.getBotAccessToken();
+        String commenterTeamId = figmaWebhookService.getCurrentUserTeamId(figmaWebhookResponse.getWebhookId(),
+                mattermostSiteUrl, botAccessToken);
+
+        userDataKVService.saveUserToCertainTeam(commenterTeamId, figmaWebhookResponse.getTriggeredBy().getId(),
+                mattermostSiteUrl, botAccessToken);
 
         String fileOwnerId = dmMessageSenderService.sendMessageToFileOwner(figmaWebhookResponse, context);
         figmaWebhookResponse.getMentions().removeIf(mention -> mention.getId().equals(fileOwnerId));

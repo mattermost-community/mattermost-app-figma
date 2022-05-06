@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -28,21 +29,29 @@ public class FileOwnerServiceImpl implements FileOwnerService {
     private final JsonUtils jsonUtils;
     private final OAuthService oAuthService;
     private final FigmaWebhookService figmaWebhookService;
-    private final KVService kvService;
 
-    public FileOwnerServiceImpl(UserDataKVService userDataKVService, RestTemplate restTemplate, JsonUtils jsonUtils, OAuthService oAuthService, FigmaWebhookService figmaWebhookService, KVService kvService) {
+    public FileOwnerServiceImpl(UserDataKVService userDataKVService, RestTemplate restTemplate, JsonUtils jsonUtils, OAuthService oAuthService, FigmaWebhookService figmaWebhookService) {
         this.userDataKVService = userDataKVService;
         this.restTemplate = restTemplate;
         this.jsonUtils = jsonUtils;
         this.oAuthService = oAuthService;
         this.figmaWebhookService = figmaWebhookService;
-        this.kvService = kvService;
     }
 
     @Override
     public String findFileOwnerId(String fileKey, String webhookId, String figmaUserId, String mmSiteUrl, String botAccessToken) {
-        String teamId = getCurrentUserTeamId(webhookId, mmSiteUrl, botAccessToken);
+        String teamId = figmaWebhookService.getCurrentUserTeamId(webhookId, mmSiteUrl, botAccessToken);
         Set<String> userIds = userDataKVService.getUserIdsByTeamId(teamId, mmSiteUrl, botAccessToken);
+        String fileOwnerId = checkIfSetContainsFileOwnerId(userIds, mmSiteUrl, botAccessToken, fileKey);
+        if (Objects.isNull(fileOwnerId)) {
+            Set<String> allUserIds = userDataKVService.getAllFigmaUserIds(mmSiteUrl, botAccessToken);
+            allUserIds.removeAll(userIds);
+            return checkIfSetContainsFileOwnerId(allUserIds, mmSiteUrl, botAccessToken, fileKey);
+        }
+        return fileOwnerId;
+    }
+
+    private String checkIfSetContainsFileOwnerId(Set<String> userIds, String mmSiteUrl, String botAccessToken, String fileKey) {
         for (String userId : userIds) {
             UserDataDto currentUserData = userDataKVService.getUserData(userId, mmSiteUrl, botAccessToken);
             if (checkIfUserIsOwner(getToken(currentUserData), fileKey)) {
@@ -76,11 +85,4 @@ public class FileOwnerServiceImpl implements FileOwnerService {
         FigmaOAuthRefreshTokenResponseDTO refreshTokenDTO = oAuthService.refreshToken(clientId, clientSecret, refreshToken);
         return refreshTokenDTO.getAccessToken();
     }
-
-    private String getCurrentUserTeamId(String webhookId, String mmSiteUrl, String botAccessToken) {
-        String webhookOwnerId = kvService.get(webhookId, mmSiteUrl, botAccessToken);
-        String accessToken = getToken(userDataKVService.getUserData(webhookOwnerId, mmSiteUrl, botAccessToken));
-        return figmaWebhookService.getWebhookById(webhookId, accessToken).getTeamId();
-    }
-
 }

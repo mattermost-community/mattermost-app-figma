@@ -24,6 +24,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
     private final KVService kvService;
     private final JsonUtils jsonUtils;
     private final DataEncryptionService dataEncryptionService;
+    private final static String ALL_USERS = "ALL_USERS";
 
     public UserDataKVServiceImpl(KVService kvService, JsonUtils jsonUtils, DataEncryptionService dataEncryptionService) {
         this.kvService = kvService;
@@ -31,6 +32,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
         this.dataEncryptionService = dataEncryptionService;
     }
 
+    @Override
     public UserDataDto getUserData(String userId, String mmSiteUrl, String botAccessToken) {
         UserDataDto currentUserData = (UserDataDto) jsonUtils.convertStringToObject(kvService.get(userId, mmSiteUrl,
                 botAccessToken), UserDataDto.class).get();
@@ -46,9 +48,35 @@ public class UserDataKVServiceImpl implements UserDataKVService {
         return currentUserData;
     }
 
+    @Override
     public Set<String> getUserIdsByTeamId(String teamId, String mmSiteUrl, String botAccessToken) {
-        return (Set<String>) jsonUtils.convertStringToObject(kvService.get(teamId, mmSiteUrl,
-                botAccessToken), new TypeReference<Set<String>>(){}).orElse(null);
+        return getSetFromKV(teamId, mmSiteUrl, botAccessToken);
+    }
+
+    @Override
+    public Set<String> getAllFigmaUserIds(String mmSiteUrl, String botAccessToken) {
+        return getSetFromKV(ALL_USERS, mmSiteUrl, botAccessToken);
+    }
+
+    @Override
+    public void saveNewUserToAllUserIdsSet(String userId, String mmSiteUrl, String botAccessToken) {
+        Set<String> allFigmaUserIds = getAllFigmaUserIds(mmSiteUrl, botAccessToken);
+        if (Objects.isNull(allFigmaUserIds)) {
+            allFigmaUserIds = new HashSet<>();
+        }
+        allFigmaUserIds.add(userId);
+        kvService.put(ALL_USERS, allFigmaUserIds, mmSiteUrl, botAccessToken);
+    }
+
+    @Override
+    public void saveUserToCertainTeam(String teamId, String userId, String mmSiteUrl, String botAccessToken) {
+        Set<String> userIds = getUserIdsByTeamId(teamId, mmSiteUrl, botAccessToken);
+
+        if (Objects.isNull(userIds)) {
+            userIds = new HashSet<>();
+        }
+        userIds.add(userId);
+        kvService.put(teamId, userIds, mmSiteUrl, botAccessToken);
     }
 
 
@@ -68,14 +96,6 @@ public class UserDataKVServiceImpl implements UserDataKVService {
             newUserData.setTeamIds(new HashSet<>(Collections.singletonList(teamId)));
             storePrimaryUserData(inputPayload, newUserData);
         }
-
-        Set<String> userIds = getUserIdsByTeamId(teamId, mmSiteUrl, botAccessToken);
-
-        if (Objects.isNull(userIds)) {
-            userIds = new HashSet<>();
-        }
-        userIds.add(userId);
-        kvService.put(teamId, userIds, mmSiteUrl, botAccessToken);
     }
 
     public void storePrimaryUserData(InputPayload inputPayload, UserDataDto currentData) {
@@ -94,5 +114,10 @@ public class UserDataKVServiceImpl implements UserDataKVService {
         currentData.setMmUserId(inputPayload.getContext().getActingUser().getId());
 
         kvService.put(userId, currentData, mmSiteUrl, botAccessToken);
+    }
+
+    private Set<String> getSetFromKV(String key, String mmSiteUrl, String botAccessToken) {
+        return (Set<String>) jsonUtils.convertStringToObject(kvService.get(key, mmSiteUrl,
+                botAccessToken), new TypeReference<Set<String>>(){}).orElse(null);
     }
 }
