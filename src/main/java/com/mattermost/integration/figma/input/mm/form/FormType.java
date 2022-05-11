@@ -1,11 +1,11 @@
 package com.mattermost.integration.figma.input.mm.form;
 
+import lombok.Builder;
 import lombok.Data;
 
 @Data
-public class Binding {
-    private String location;
-    private String label;
+@Builder
+public class FormType {
     private Form form;
-    private Submit submit;
+    private String type;
 }

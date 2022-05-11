@@ -31,5 +31,7 @@ public class Context{
     private String actingUserAccessToken;
     @JsonProperty("app")
     private App app;
+    @JsonProperty("channel")
+    private Channel channel;
 
 }

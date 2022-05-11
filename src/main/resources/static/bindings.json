@@ -78,6 +78,21 @@
                                         }
                                     ]
                                 }
+                            },
+                            {
+                                "app_id": "figma",
+                                "location": "list",
+                                "label": "list",
+                                "submit": {
+                                    "path": "/subscriptions",
+                                    "expand": {
+                                        "acting_user_access_token": "all",
+                                        "app": "all",
+                                        "channel": "all",
+                                        "oauth2_app": "all",
+                                        "oauth2_user": "all"
+                                    }
+                                }
                             }
                         ]
                     }

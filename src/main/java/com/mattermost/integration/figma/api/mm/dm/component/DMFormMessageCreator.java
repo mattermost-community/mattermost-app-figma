@@ -87,13 +87,13 @@ public class DMFormMessageCreator {
     }
 
     private Field prepareSingleField(String name, String value, String label) {
-        Field field = new TextField();
-        field.setName(name);
-        field.setLabel(label);
-        field.setValue(value);
-        field.setType(FIELD_TYPE);
-        field.setRequired(true);
-        return field;
+        TextField.TextFieldBuilder<?, ?> builder = TextField.builder();
+        builder.name(name);
+        builder.label(label);
+        builder.value(value);
+        builder.type(FIELD_TYPE);
+        builder.isRequired(true);
+        return builder.build();
     }
 
     private TextField prepareSingleTextAreaField(String name, String value, String label) {

@@ -1,6 +1,7 @@
 package com.mattermost.integration.figma.input.oauth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.mattermost.integration.figma.input.mm.form.MMStaticSelectField;
 import lombok.Data;
 
 @Data
@@ -17,4 +18,8 @@ public class Values{
     private String teamId;
     @JsonProperty("message")
     private String message;
+    @JsonProperty("project_id")
+    private MMStaticSelectField project;
+    @JsonProperty("file_id")
+    private MMStaticSelectField file;
 }

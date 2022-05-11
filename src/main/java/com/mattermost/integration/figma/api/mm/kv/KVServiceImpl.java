@@ -3,6 +3,7 @@ package com.mattermost.integration.figma.api.mm.kv;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -31,6 +32,10 @@ public class KVServiceImpl implements KVService {
         HttpEntity<Object> request = new HttpEntity<>(headers);
 
         ResponseEntity<String> resp = restTemplate.exchange(String.format("%s%s%s", mattermostSiteUrl, KV_URL, key), HttpMethod.GET, request, String.class);
+
+        if ("{}".equals(resp.getBody())) {
+            return "";
+        }
 
         return resp.getBody();
     }

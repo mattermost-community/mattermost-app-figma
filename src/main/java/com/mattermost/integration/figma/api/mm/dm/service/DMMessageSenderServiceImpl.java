@@ -2,10 +2,13 @@ package com.mattermost.integration.figma.api.mm.dm.service;
 
 import com.mattermost.integration.figma.api.figma.comment.service.CommentService;
 import com.mattermost.integration.figma.api.figma.user.service.FileOwnerService;
+import com.mattermost.integration.figma.api.mm.dm.component.DMCallButtonMessageCreator;
 import com.mattermost.integration.figma.api.mm.dm.component.DMFormMessageCreator;
 import com.mattermost.integration.figma.api.mm.dm.dto.DMChannelPayload;
 import com.mattermost.integration.figma.api.mm.dm.dto.DMMessageWithPropsFields;
+import com.mattermost.integration.figma.api.mm.dm.dto.FileSubscriptionMessage;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
+import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.api.mm.user.MMUserService;
 import com.mattermost.integration.figma.input.figma.notification.Comment;
 import com.mattermost.integration.figma.input.figma.notification.CommentDto;
@@ -14,6 +17,7 @@ import com.mattermost.integration.figma.input.figma.notification.Mention;
 import com.mattermost.integration.figma.input.mm.user.MMUser;
 import com.mattermost.integration.figma.input.oauth.ActingUser;
 import com.mattermost.integration.figma.input.oauth.Context;
+import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
 import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.security.service.OAuthService;
@@ -75,7 +79,7 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
 
     public String sendMessageToFileOwner(FigmaWebhookResponse figmaWebhookResponse, Context context) {
         String fileOwnerId = fileOwnerService.findFileOwnerId(figmaWebhookResponse.getFileKey(),
-                figmaWebhookResponse.getWebhookId(),figmaWebhookResponse.getTriggeredBy().getId(),
+                figmaWebhookResponse.getWebhookId(), figmaWebhookResponse.getTriggeredBy().getId(),
                 context.getMattermostSiteUrl(), context.getBotAccessToken());
         if (!figmaWebhookResponse.getTriggeredBy().getId().equals(fileOwnerId)) {
             UserDataDto fileOwnerData = userDataKVService.getUserData(fileOwnerId, context.getMattermostSiteUrl(), context.getBotAccessToken());
@@ -83,6 +87,24 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
             return fileOwnerId;
         }
         return FILE_OWNER_ID_MATCHED_COMMENTER_ID;
+    }
+
+    @Override
+    public void sendFileSubscriptionToMMChat(FileInfo file, InputPayload payload) {
+        String userId = file.getUserId();
+        String mattermostSiteUrl = payload.getContext().getMattermostSiteUrl();
+        String botAccessToken = payload.getContext().getBotAccessToken();
+
+        MMUser user = mmUserService.getUserById(userId, mattermostSiteUrl, botAccessToken);
+
+        String userName = String.format("@%s", user.getUsername());
+
+        FileSubscriptionMessage fileSubscriptionMessage = new FileSubscriptionMessage();
+        fileSubscriptionMessage.setFileInfo(file);
+        fileSubscriptionMessage.setPayload(payload);
+        fileSubscriptionMessage.setMmUser(user);
+
+        messageService.sendDMMessage(new DMCallButtonMessageCreator().createDMMessageWithPropsPayload(fileSubscriptionMessage));
     }
 
     public void sendMessageToSpecificReceiver(Context context, UserDataDto specificUserData,

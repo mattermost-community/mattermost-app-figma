@@ -12,4 +12,5 @@ public class Expand {
     private String oauth2App;
     @JsonProperty("oauth2_user")
     private String oauth2User;
+    private String channel;
 }
