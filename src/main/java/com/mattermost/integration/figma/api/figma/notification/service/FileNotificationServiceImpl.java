@@ -15,8 +15,10 @@ import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
 import com.mattermost.integration.figma.security.service.OAuthService;
+import com.mattermost.integration.figma.subscribe.service.SubscribeService;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +26,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.Set;
 
 import static org.apache.logging.log4j.util.Strings.isBlank;
 
@@ -37,22 +41,30 @@ public class FileNotificationServiceImpl implements FileNotificationService {
     private static final String FILE_COMMENT_URL = "/webhook/comment";
     private static final String MENTIONED_NOTIFICATION_ROOT = "commented on";
 
-    private final RestTemplate figmaRestTemplate;
-    private final FigmaWebhookService figmaWebhookService;
-    private final OAuthService oAuthService;
-    private final UserDataKVService userDataKVService;
-    private final DMMessageSenderService dmMessageSenderService;
-    private final KVService kvService;
-    private final JsonUtils jsonUtils;
+    @Autowired
+    @Qualifier("figmaRestTemplate")
+    private RestTemplate figmaRestTemplate;
+    @Autowired
+    private FigmaWebhookService figmaWebhookService;
+    @Autowired
+    private OAuthService oAuthService;
+    @Autowired
+    private UserDataKVService userDataKVService;
+    @Autowired
+    private SubscribeService subscribeService;
+    @Autowired
+    private DMMessageSenderService dmMessageSenderService;
+    @Autowired
+    private KVService kvService;
+    @Autowired
+    private JsonUtils jsonUtils;
 
-    public FileNotificationServiceImpl(@Qualifier("figmaRestTemplate") RestTemplate figmaRestTemplate, FigmaWebhookService figmaWebhookService, OAuthService oAuthService, UserDataKVService userDataKVService, DMMessageSenderService dmMessageSenderService, KVService kvService, JsonUtils jsonUtils) {
-        this.figmaRestTemplate = figmaRestTemplate;
-        this.figmaWebhookService = figmaWebhookService;
-        this.oAuthService = oAuthService;
-        this.userDataKVService = userDataKVService;
-        this.dmMessageSenderService = dmMessageSenderService;
-        this.kvService = kvService;
-        this.jsonUtils = jsonUtils;
+
+    public void sendFileNotificationMessageToMMSubscribedChannels(FileCommentWebhookResponse fileCommentWebhookResponse) {
+
+        FigmaWebhookResponse figmaData = fileCommentWebhookResponse.getValues().getData();
+        Set<String> mmSubscribedChannels = subscribeService.getMMChannelIdsByFileId(fileCommentWebhookResponse.getContext(), figmaData.getFileKey());
+        mmSubscribedChannels.forEach(ch -> dmMessageSenderService.sendMessageToSubscribedChannel(ch, fileCommentWebhookResponse));
     }
 
     public SubscribeToFileNotification subscribeToFileNotification(InputPayload inputPayload) {

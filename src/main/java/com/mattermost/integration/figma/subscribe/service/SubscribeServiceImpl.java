@@ -4,6 +4,7 @@ import com.mattermost.integration.figma.api.mm.dm.service.DMMessageSenderService
 import com.mattermost.integration.figma.api.mm.kv.SubscriptionKVService;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.input.mm.form.MMStaticSelectField;
+import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.subscribe.service.dto.FileData;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,13 @@ public class SubscribeServiceImpl implements SubscribeService {
         String mattermostSiteUrl = payload.getContext().getMattermostSiteUrl();
         String mmChannelID = payload.getContext().getChannel().getId();
         String botAccessToken = payload.getContext().getBotAccessToken();
-        subscriptionKVService.unsubscribeFileFromChannel(fileKey, mmChannelID, mattermostSiteUrl , botAccessToken);
+        subscriptionKVService.unsubscribeFileFromChannel(fileKey, mmChannelID, mattermostSiteUrl, botAccessToken);
+    }
+
+    @Override
+    public Set<String> getMMChannelIdsByFileId(Context context, String fileKey) {
+        String mattermostSiteUrl = context.getMattermostSiteUrl();
+        String botAccessToken = context.getBotAccessToken();
+        return subscriptionKVService.getMMChannelIdsByFileId(fileKey, mattermostSiteUrl, botAccessToken);
     }
 }

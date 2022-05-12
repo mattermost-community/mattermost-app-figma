@@ -6,14 +6,12 @@ import com.mattermost.integration.figma.api.mm.dm.component.DMCallButtonMessageC
 import com.mattermost.integration.figma.api.mm.dm.component.DMFormMessageCreator;
 import com.mattermost.integration.figma.api.mm.dm.dto.DMChannelPayload;
 import com.mattermost.integration.figma.api.mm.dm.dto.DMMessageWithPropsFields;
+import com.mattermost.integration.figma.api.mm.dm.dto.DMMessageWithPropsPayload;
 import com.mattermost.integration.figma.api.mm.dm.dto.FileSubscriptionMessage;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.api.mm.user.MMUserService;
-import com.mattermost.integration.figma.input.figma.notification.Comment;
-import com.mattermost.integration.figma.input.figma.notification.CommentDto;
-import com.mattermost.integration.figma.input.figma.notification.FigmaWebhookResponse;
-import com.mattermost.integration.figma.input.figma.notification.Mention;
+import com.mattermost.integration.figma.input.figma.notification.*;
 import com.mattermost.integration.figma.input.mm.user.MMUser;
 import com.mattermost.integration.figma.input.oauth.ActingUser;
 import com.mattermost.integration.figma.input.oauth.Context;
@@ -39,6 +37,8 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
     private static final String AUTHOR_ID_MATCHED_COMMENTER_ID = "";
     private static final String FILE_OWNER_ID_MATCHED_COMMENTER_ID = "";
     private static final String COMMENTED_IN_YOUR_FILE = "commented in your file";
+    private static final String COMMENTED_IN_FILE = "commented in file";
+
 
     private final MMUserService mmUserService;
     private final DMFormMessageCreator formMessageCreator;
@@ -105,6 +105,18 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
         fileSubscriptionMessage.setMmUser(user);
 
         messageService.sendDMMessage(new DMCallButtonMessageCreator().createDMMessageWithPropsPayload(fileSubscriptionMessage));
+    }
+
+    @Override
+    public void sendMessageToSubscribedChannel(String channelId, FileCommentWebhookResponse webhookResponse) {
+        DMMessageWithPropsFields messageWithPropsFields = getMessageWithPropsFields(webhookResponse.getContext(), webhookResponse.getValues().getData(),
+                channelId, COMMENTED_IN_FILE);
+
+        DMMessageWithPropsPayload dmMessageWithPropsPayload = formMessageCreator.createDMMessageWithPropsPayload(messageWithPropsFields, webhookResponse.getContext().getBotAccessToken(),
+                webhookResponse.getContext().getMattermostSiteUrl());
+
+        messageService.sendDMMessage(dmMessageWithPropsPayload);
+
     }
 
     public void sendMessageToSpecificReceiver(Context context, UserDataDto specificUserData,

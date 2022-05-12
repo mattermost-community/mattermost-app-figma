@@ -6,4 +6,5 @@ import com.mattermost.integration.figma.input.oauth.InputPayload;
 public interface FileNotificationService {
     SubscribeToFileNotification subscribeToFileNotification(InputPayload inputPayload);
     void sendFileNotificationMessageToMM(FileCommentWebhookResponse fileCommentWebhookResponse);
+    void sendFileNotificationMessageToMMSubscribedChannels(FileCommentWebhookResponse fileCommentWebhookResponse);
 }
