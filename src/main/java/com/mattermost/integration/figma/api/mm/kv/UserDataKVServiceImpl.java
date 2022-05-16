@@ -25,6 +25,9 @@ public class UserDataKVServiceImpl implements UserDataKVService {
     private final JsonUtils jsonUtils;
     private final DataEncryptionService dataEncryptionService;
     private final static String ALL_USERS = "ALL_USERS";
+    private final static String USER_KV_PREFIX = "figma-user-id-";
+    private final static String FIGMA_TEAM_ID_PREFIX = "figma-team-id-";
+    private final static String ALL_TEAMS = "ALL_TEAMS";
 
     public UserDataKVServiceImpl(KVService kvService, JsonUtils jsonUtils, DataEncryptionService dataEncryptionService) {
         this.kvService = kvService;
@@ -34,7 +37,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
 
     @Override
     public UserDataDto getUserData(String userId, String mmSiteUrl, String botAccessToken) {
-        UserDataDto currentUserData = (UserDataDto) jsonUtils.convertStringToObject(kvService.get(userId, mmSiteUrl,
+        UserDataDto currentUserData = (UserDataDto) jsonUtils.convertStringToObject(kvService.get(USER_KV_PREFIX.concat(userId), mmSiteUrl,
                 botAccessToken), UserDataDto.class).get();
         if (Objects.isNull(currentUserData.getClientSecret()) || Objects.isNull(currentUserData.getRefreshToken())) {
             return currentUserData;
@@ -50,12 +53,17 @@ public class UserDataKVServiceImpl implements UserDataKVService {
 
     @Override
     public Set<String> getUserIdsByTeamId(String teamId, String mmSiteUrl, String botAccessToken) {
-        return getSetFromKV(teamId, mmSiteUrl, botAccessToken);
+        return getSetFromKV(FIGMA_TEAM_ID_PREFIX.concat(teamId), mmSiteUrl, botAccessToken);
     }
 
     @Override
     public Set<String> getAllFigmaUserIds(String mmSiteUrl, String botAccessToken) {
         return getSetFromKV(ALL_USERS, mmSiteUrl, botAccessToken);
+    }
+
+    @Override
+    public Set<String> getAllFigmaTeamIds(String mmSiteUrl, String botAccessToken) {
+        return getSetFromKV(ALL_TEAMS, mmSiteUrl, botAccessToken);
     }
 
     @Override
@@ -69,6 +77,16 @@ public class UserDataKVServiceImpl implements UserDataKVService {
     }
 
     @Override
+    public void saveNewTeamToAllTeamIdsSet(String teamId, String mmSiteUrl, String botAccessToken) {
+        Set<String> allFigmaTeamIds = getAllFigmaUserIds(mmSiteUrl, botAccessToken);
+        if (Objects.isNull(allFigmaTeamIds)) {
+            allFigmaTeamIds = new HashSet<>();
+        }
+        allFigmaTeamIds.add(teamId);
+        kvService.put(ALL_TEAMS, allFigmaTeamIds, mmSiteUrl, botAccessToken);
+    }
+
+    @Override
     public void saveUserToCertainTeam(String teamId, String userId, String mmSiteUrl, String botAccessToken) {
         Set<String> userIds = getUserIdsByTeamId(teamId, mmSiteUrl, botAccessToken);
 
@@ -76,7 +94,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
             userIds = new HashSet<>();
         }
         userIds.add(userId);
-        kvService.put(teamId, userIds, mmSiteUrl, botAccessToken);
+        kvService.put(FIGMA_TEAM_ID_PREFIX.concat(teamId), userIds, mmSiteUrl, botAccessToken);
     }
 
 
@@ -113,7 +131,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
 
         currentData.setMmUserId(inputPayload.getContext().getActingUser().getId());
 
-        kvService.put(userId, currentData, mmSiteUrl, botAccessToken);
+        kvService.put(USER_KV_PREFIX.concat(userId), currentData, mmSiteUrl, botAccessToken);
     }
 
     private Set<String> getSetFromKV(String key, String mmSiteUrl, String botAccessToken) {

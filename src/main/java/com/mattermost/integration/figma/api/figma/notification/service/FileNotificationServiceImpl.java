@@ -1,19 +1,17 @@
 package com.mattermost.integration.figma.api.figma.notification.service;
 
-import com.mattermost.integration.figma.api.figma.webhook.dto.TeamWebhookInfoResponseDto;
 import com.mattermost.integration.figma.api.figma.webhook.dto.Webhook;
 import com.mattermost.integration.figma.api.figma.webhook.service.FigmaWebhookService;
 import com.mattermost.integration.figma.api.mm.dm.service.DMMessageSenderService;
 import com.mattermost.integration.figma.api.mm.kv.KVService;
-import com.mattermost.integration.figma.api.mm.kv.SubscriptionKVService;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.input.figma.notification.FigmaWebhookResponse;
 import com.mattermost.integration.figma.input.figma.notification.FileCommentNotificationRequest;
 import com.mattermost.integration.figma.input.figma.notification.FileCommentWebhookResponse;
-import com.mattermost.integration.figma.input.mm.form.MMStaticSelectField;
 import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
+import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.security.service.OAuthService;
 import com.mattermost.integration.figma.subscribe.service.SubscribeService;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
@@ -27,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Objects;
 import java.util.Set;
 
 import static org.apache.logging.log4j.util.Strings.isBlank;
@@ -40,6 +39,8 @@ public class FileNotificationServiceImpl implements FileNotificationService {
     private static final String REDIRECT_URL = "%s%s?secret=%s";
     private static final String FILE_COMMENT_URL = "/webhook/comment";
     private static final String MENTIONED_NOTIFICATION_ROOT = "commented on";
+    private static final String WEBHOOK_ID_PREFIX = "figma-webhook-id-";
+    private static final String TEAM_WEBHOOK_PREFIX = "team-webhook-id-";
 
     @Autowired
     @Qualifier("figmaRestTemplate")
@@ -76,16 +77,17 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         String mmSiteUrl = inputPayload.getContext().getMattermostSiteUrl();
         String botAccessToken = inputPayload.getContext().getBotAccessToken();
 
-        String accessToken = getToken(inputPayload);
+        deleteExistingFileCommentWebhook(teamId, mmSiteUrl, botAccessToken);
 
-        deleteExistingFileCommentWebhook(teamId, accessToken, mmSiteUrl, botAccessToken);
+        String accessToken = getToken(inputPayload);
 
         HttpEntity<FileCommentNotificationRequest> request = createFileCommentNotificationRequest(inputPayload, accessToken);
         log.debug("File notification request : " + request);
         log.info("Sending comment request for team with id: " + teamId);
         ResponseEntity<String> stringResponseEntity = figmaRestTemplate.postForEntity(BASE_WEBHOOK_URL, request, String.class);
         Webhook webhook = (Webhook) jsonUtils.convertStringToObject(stringResponseEntity.getBody(), Webhook.class).get();
-        kvService.put(webhook.getId(), inputPayload.getContext().getOauth2().getUser().getUserId(), mmSiteUrl, botAccessToken);
+        saveNecessaryDataToKv(inputPayload, webhook);
+
         return SubscribeToFileNotification.SUBSCRIBED;
     }
 
@@ -122,13 +124,19 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         return refreshTokenDTO.getAccessToken();
     }
 
-    private void deleteExistingFileCommentWebhook(String teamId, String figmaToken, String mmSiteUrl, String botAccessToken) {
-        TeamWebhookInfoResponseDto teamWebhooks = figmaWebhookService.getTeamWebhooks(teamId, figmaToken);
-        teamWebhooks.webhooks.stream().filter(webhook -> FILE_COMMENT_EVENT_TYPE.equals(webhook.getEventType()))
-                .forEach(webhook -> {
-                    figmaWebhookService.deleteWebhook(webhook.getId(), figmaToken);
-                    kvService.delete(webhook.getId(), mmSiteUrl, botAccessToken);
-                });
+    private void deleteExistingFileCommentWebhook(String teamId, String mmSiteUrl, String botAccessToken) {
+        String teamWebhookId = kvService.get(TEAM_WEBHOOK_PREFIX.concat(teamId), mmSiteUrl, botAccessToken);
+        if (Objects.nonNull(teamWebhookId) && !teamWebhookId.isBlank()) {
+            String webhookOwnerId = kvService.get(WEBHOOK_ID_PREFIX.concat(teamWebhookId), mmSiteUrl, botAccessToken);
+            UserDataDto webhookOwner = userDataKVService.getUserData(webhookOwnerId, mmSiteUrl, botAccessToken);
+            FigmaOAuthRefreshTokenResponseDTO figmaOAuthRefreshTokenResponseDTO = oAuthService.refreshToken(webhookOwner.getClientId(), webhookOwner.getClientSecret(), webhookOwner.getRefreshToken());
+            figmaWebhookService.getTeamWebhooks(teamId, figmaOAuthRefreshTokenResponseDTO.getAccessToken())
+                    .getWebhooks().stream().filter(webhook -> webhook.getEventType().equals(FILE_COMMENT_EVENT_TYPE))
+                    .forEach(webhook -> {
+                        figmaWebhookService.deleteWebhook(webhook.getId(), figmaOAuthRefreshTokenResponseDTO.getAccessToken());
+                        kvService.delete(WEBHOOK_ID_PREFIX.concat(webhook.getId()), mmSiteUrl, botAccessToken);
+                    });
+        }
     }
 
     private HttpEntity<FileCommentNotificationRequest> createFileCommentNotificationRequest(InputPayload inputPayload, String token) {
@@ -146,5 +154,15 @@ public class FileNotificationServiceImpl implements FileNotificationService {
                 inputPayload.getContext().getApp().getWebhookSecret()));
 
         return new HttpEntity<>(fileCommentNotificationRequest, headers);
+    }
+
+    private void saveNecessaryDataToKv(InputPayload inputPayload, Webhook webhook) {
+        String teamId = inputPayload.getValues().getTeamId();
+        String mmSiteUrl = inputPayload.getContext().getMattermostSiteUrl();
+        String botAccessToken = inputPayload.getContext().getBotAccessToken();
+
+        kvService.put(WEBHOOK_ID_PREFIX.concat(webhook.getId()), inputPayload.getContext().getOauth2().getUser().getUserId(), mmSiteUrl, botAccessToken);
+        kvService.put(TEAM_WEBHOOK_PREFIX.concat(teamId), webhook.getId(), mmSiteUrl, botAccessToken);
+        userDataKVService.saveNewTeamToAllTeamIdsSet(teamId, mmSiteUrl, botAccessToken);
     }
 }

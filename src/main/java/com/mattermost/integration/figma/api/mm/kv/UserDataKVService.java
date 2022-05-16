@@ -18,5 +18,9 @@ public interface UserDataKVService {
 
     Set<String> getAllFigmaUserIds(String mmSiteUrl, String botAccessToken);
 
+    Set<String> getAllFigmaTeamIds(String mmSiteUrl, String botAccessToken);
+
     void saveUserToCertainTeam(String teamId, String userId, String mmSiteUrl, String botAccessToken);
+
+    void saveNewTeamToAllTeamIdsSet(String teamId, String mmSiteUrl, String botAccessToken);
 }

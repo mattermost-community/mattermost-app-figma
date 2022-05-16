@@ -24,6 +24,7 @@ import org.springframework.web.client.RestTemplate;
 public class FigmaWebhookServiceImpl implements FigmaWebhookService {
     private static final String FIGMA_TEAM_WEBHOOKS_URL = "https://api.figma.com/v2/teams/";
     private static final String FIGMA_WEBHOOK_URL = "https://api.figma.com/v2/webhooks";
+    private static final String WEBHOOK_ID_PREFIX = "figma-webhook-id-";
 
     @Autowired
     @Qualifier("figmaRestTemplate")
@@ -78,7 +79,7 @@ public class FigmaWebhookServiceImpl implements FigmaWebhookService {
 
     @Override
     public String getCurrentUserTeamId(String webhookId, String mmSiteUrl, String botAccessToken) {
-        String webhookOwnerId = kvService.get(webhookId, mmSiteUrl, botAccessToken);
+        String webhookOwnerId = kvService.get(WEBHOOK_ID_PREFIX.concat(webhookId), mmSiteUrl, botAccessToken);
         String accessToken = getToken(userDataKVService.getUserData(webhookOwnerId, mmSiteUrl, botAccessToken));
         return getWebhookById(webhookId, accessToken).getTeamId();
     }

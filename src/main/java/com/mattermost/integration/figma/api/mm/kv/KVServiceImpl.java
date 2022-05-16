@@ -3,7 +3,6 @@ package com.mattermost.integration.figma.api.mm.kv;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 @Service
