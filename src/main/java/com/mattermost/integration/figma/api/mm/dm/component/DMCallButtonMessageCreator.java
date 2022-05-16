@@ -2,7 +2,12 @@ package com.mattermost.integration.figma.api.mm.dm.component;
 
 import com.mattermost.integration.figma.api.mm.dm.dto.DMMessageWithPropsPayload;
 import com.mattermost.integration.figma.api.mm.dm.dto.FileSubscriptionMessage;
+import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
+import com.mattermost.integration.figma.api.mm.user.MMUserService;
 import com.mattermost.integration.figma.input.mm.form.*;
+import com.mattermost.integration.figma.input.mm.user.MMUser;
+import com.mattermost.integration.figma.input.oauth.Context;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -13,6 +18,10 @@ public class DMCallButtonMessageCreator {
     private static final String LOCATION = "delete_subscription_button";
     private static final String DELETE = "Delete";
     private static final String ALL = "all";
+    private static final String FILE_URL = "https://www.figma.com/file/%s";
+
+    @Autowired
+    private MMUserService mmUserService;
 
 
     public DMMessageWithPropsPayload createDMMessageWithPropsPayload(FileSubscriptionMessage fileSubscriptionMessage) {
@@ -42,11 +51,19 @@ public class DMCallButtonMessageCreator {
     }
 
     private AppBinding prepareSingleAppBinding(FileSubscriptionMessage fileSubscriptionMessage) {
-        String appId = fileSubscriptionMessage.getPayload().getContext().getAppId();
+        FileInfo fileInfo = fileSubscriptionMessage.getFileInfo();
+        String fileName = fileInfo.getFileName();
+        String fileId = fileInfo.getFileId();
+        Context context = fileSubscriptionMessage.getPayload().getContext();
+        String appId = context.getAppId();
         AppBinding appBinding = new AppBinding();
         appBinding.setAppId(appId);
-        appBinding.setLabel(fileSubscriptionMessage.getFileInfo().getFileName());
-        appBinding.setDescription(fileSubscriptionMessage.getFileInfo().getCreatedAt().toString());
+        String label = String.format("[%s](%s)", fileName, String.format(FILE_URL, fileId));
+        appBinding.setLabel(label);
+
+        MMUser user = mmUserService.getUserById(fileInfo.getUserId(), context.getMattermostSiteUrl(), context.getBotAccessToken());
+        String description = String.format("Created by %s on %s", user.getUsername(), fileInfo.getCreatedAt().toString());
+        appBinding.setDescription(description);
         appBinding.setBindings(Collections.singletonList(prepareSingleBinding(fileSubscriptionMessage)));
         return appBinding;
     }

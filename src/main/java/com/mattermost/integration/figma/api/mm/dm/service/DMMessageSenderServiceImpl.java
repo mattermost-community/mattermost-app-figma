@@ -19,6 +19,7 @@ import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
 import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.security.service.OAuthService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -39,26 +40,23 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
     private static final String COMMENTED_IN_YOUR_FILE = "commented in your file";
     private static final String COMMENTED_IN_FILE = "commented in file";
 
+    @Autowired
+    private MMUserService mmUserService;
+    @Autowired
+    private DMFormMessageCreator formMessageCreator;
+    @Autowired
+    private CommentService commentService;
+    @Autowired
+    private UserDataKVService userDataKVService;
+    @Autowired
+    private DMMessageService messageService;
+    @Autowired
+    private OAuthService oAuthService;
+    @Autowired
+    private FileOwnerService fileOwnerService;
+    @Autowired
+    private DMCallButtonMessageCreator messageCreator;
 
-    private final MMUserService mmUserService;
-    private final DMFormMessageCreator formMessageCreator;
-    private final CommentService commentService;
-    private final UserDataKVService userDataKVService;
-    private final DMMessageService messageService;
-    private final OAuthService oAuthService;
-    private final FileOwnerService fileOwnerService;
-
-    public DMMessageSenderServiceImpl(MMUserService mmUserService, DMFormMessageCreator formMessageCreator,
-                                      CommentService commentService, UserDataKVService userDataKVService,
-                                      DMMessageService messageService, OAuthService oAuthService, FileOwnerService fileOwnerService) {
-        this.mmUserService = mmUserService;
-        this.formMessageCreator = formMessageCreator;
-        this.commentService = commentService;
-        this.userDataKVService = userDataKVService;
-        this.messageService = messageService;
-        this.oAuthService = oAuthService;
-        this.fileOwnerService = fileOwnerService;
-    }
 
     public String sendMessageToCommentAuthor(FigmaWebhookResponse figmaWebhookResponse, Context context, String fileOwnerId) {
         String token = getToken(figmaWebhookResponse, context);
@@ -97,14 +95,12 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
 
         MMUser user = mmUserService.getUserById(userId, mattermostSiteUrl, botAccessToken);
 
-        String userName = String.format("@%s", user.getUsername());
-
         FileSubscriptionMessage fileSubscriptionMessage = new FileSubscriptionMessage();
         fileSubscriptionMessage.setFileInfo(file);
         fileSubscriptionMessage.setPayload(payload);
         fileSubscriptionMessage.setMmUser(user);
 
-        messageService.sendDMMessage(new DMCallButtonMessageCreator().createDMMessageWithPropsPayload(fileSubscriptionMessage));
+        messageService.sendDMMessage(messageCreator.createDMMessageWithPropsPayload(fileSubscriptionMessage));
     }
 
     @Override
