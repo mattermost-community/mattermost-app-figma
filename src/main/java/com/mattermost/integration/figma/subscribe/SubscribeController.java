@@ -89,7 +89,7 @@ public class SubscribeController {
         log.info("Get Subscriptions for channel: " + request.getContext().getChannel().getId() + " has come");
         log.debug("Get files request: " + request);
         subscribeService.sendSubscriptionFilesToMMChannel(request);
-        return "{\"text\":\"Subscribed\"}";
+        return "{\"type\":\"ok\"}";
     }
 
     @PostMapping("/project-files/file/{fileId}/remove")
