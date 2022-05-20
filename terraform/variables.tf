@@ -15,7 +15,7 @@ variable "api_env_stage_name" {
 }
 
 variable "lambda_payload_filename" {
-  default = "../target/figma-0.0.1-SNAPSHOT.jar"
+  default = "../target/java-mm-figma-function.zip"
 }
 
 variable "figma_aws_lambda_bucket_key" {

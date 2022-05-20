@@ -46,5 +46,15 @@
   "http": {
     "root_url": "http://localhost:8080"
   },
+  "aws_lambda": {
+    "functions": [
+      {
+        "path": "/",
+        "name": "java-mm-figma-function",
+        "handler": "com.mattermost.integration.figma.StreamLambdaHandler",
+        "runtime": "java11"
+      }
+    ]
+  },
   "assets": []
 }
