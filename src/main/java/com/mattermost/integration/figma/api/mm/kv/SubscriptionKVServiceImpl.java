@@ -2,13 +2,17 @@ package com.mattermost.integration.figma.api.mm.kv;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
+import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFileInfoNotFoundException;
+import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionFromDMChannelException;
 import com.mattermost.integration.figma.subscribe.service.dto.FileData;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.FileNotFoundException;
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,6 +40,21 @@ public class SubscriptionKVServiceImpl implements SubscriptionKVService {
 
         mapChannelToFile(fileKey, mmChanelId, mattermostSiteUrl, token);
         mapFileToChannel(fileKey, mmChanelId, mattermostSiteUrl, token);
+    }
+
+    @Override
+    public Optional<FileInfo> getFile(String mattermostSiteUrl, String token, String id) {
+        String file = kvService.get(String.format("%s%s", FILE_KEY_PREFIX, id), mattermostSiteUrl, token);
+        if (file.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.of((FileInfo) jsonUtils.convertStringToObject(file, new TypeReference<FileInfo>() {
+        }).orElse(Optional.empty()));
+    }
+
+    @Override
+    public void updateFile(String mattermostSiteUrl, String token, FileInfo fileInfo) {
+        kvService.put(String.format("%s%s", FILE_KEY_PREFIX, fileInfo.getFileId()), fileInfo, mattermostSiteUrl, token);
     }
 
     private void putFile(String mattermostSiteUrl, String token, String fileKey, String fileName, String subscribedBy) {
@@ -79,17 +98,9 @@ public class SubscriptionKVServiceImpl implements SubscriptionKVService {
         Set<String> fileIds = (Set<String>) jsonUtils.convertStringToObject(mmChanelSubscribedFiles, new TypeReference<Set<String>>() {
         }).orElse(new HashSet<String>());
 
-        return fileIds.stream().map(id -> getFile(mattermostSiteUrl, token, id)).collect(Collectors.toSet());
+        return fileIds.stream().map(id -> getFile(mattermostSiteUrl, token, id).orElseThrow(() -> new MMFileInfoNotFoundException(id))).collect(Collectors.toSet());
     }
 
-    private FileInfo getFile(String mattermostSiteUrl, String token, String id) {
-        String file = kvService.get(String.format("%s%s", FILE_KEY_PREFIX, id), mattermostSiteUrl, token);
-        if (file.isBlank()) {
-            return new FileInfo();
-        }
-        return (FileInfo) jsonUtils.convertStringToObject(file, new TypeReference<FileInfo>() {
-        }).orElse(new FileInfo());
-    }
 
     @Override
     public Set<String> getMMChannelIdsByFileId(String figmaFileId, String mattermostSiteUrl, String token) {
