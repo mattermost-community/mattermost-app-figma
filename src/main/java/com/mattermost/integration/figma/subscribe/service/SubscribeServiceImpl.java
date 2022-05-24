@@ -3,13 +3,16 @@ package com.mattermost.integration.figma.subscribe.service;
 import com.mattermost.integration.figma.api.mm.dm.service.DMMessageSenderService;
 import com.mattermost.integration.figma.api.mm.kv.SubscriptionKVService;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
+import com.mattermost.integration.figma.api.mm.user.MMUserService;
 import com.mattermost.integration.figma.input.mm.form.MMStaticSelectField;
+import com.mattermost.integration.figma.input.mm.user.MMChannelUser;
 import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.subscribe.service.dto.FileData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -20,6 +23,9 @@ public class SubscribeServiceImpl implements SubscribeService {
 
     @Autowired
     private DMMessageSenderService dmMessageSenderService;
+
+    @Autowired
+    private MMUserService mmUserService;
 
     @Override
     public void subscribe(InputPayload payload) {
@@ -57,5 +63,17 @@ public class SubscribeServiceImpl implements SubscribeService {
         String mattermostSiteUrl = context.getMattermostSiteUrl();
         String botAccessToken = context.getBotAccessToken();
         return subscriptionKVService.getMMChannelIdsByFileId(fileKey, mattermostSiteUrl, botAccessToken);
+    }
+
+    @Override
+    public boolean isBotExistsInChannel(InputPayload payload) {
+        String userAccessToken = payload.getContext().getActingUserAccessToken();
+        String channelId = payload.getContext().getChannel().getId();
+        String mattermostSiteUrl = payload.getContext().getMattermostSiteUrl();
+        String botUserId = payload.getContext().getBotUserId();
+
+        List<MMChannelUser> usersInChannel = mmUserService.getUsersByChannelId(channelId, mattermostSiteUrl, userAccessToken);
+
+        return usersInChannel.stream().anyMatch(u-> botUserId.equals(u.getUserId()));
     }
 }

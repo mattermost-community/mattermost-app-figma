@@ -9,7 +9,9 @@ import com.mattermost.integration.figma.api.figma.project.service.FigmaProjectSe
 import com.mattermost.integration.figma.api.mm.dm.component.FigmaFilesFormReplyCreator;
 import com.mattermost.integration.figma.api.mm.dm.component.ProjectFormReplyCreator;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
+import com.mattermost.integration.figma.api.mm.user.MMUserService;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionFromDMChannelException;
+import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionInChannelWithoutBotException;
 import com.mattermost.integration.figma.input.mm.form.FormType;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.subscribe.service.SubscribeService;
@@ -41,10 +43,14 @@ public class SubscribeController {
 
 
     @PostMapping("/subscribe")
-    public FormType subscribeToFileComment(@RequestBody InputPayload request) throws IOException {
+    public FormType subscribeToFileComment(@RequestBody InputPayload request) {
 
-        if("D".equalsIgnoreCase(request.getContext().getChannel().getType())){
+        if ("D".equalsIgnoreCase(request.getContext().getChannel().getType())) {
             throw new MMSubscriptionFromDMChannelException();
+        }
+
+        if (!subscribeService.isBotExistsInChannel(request)) {
+            throw new MMSubscriptionInChannelWithoutBotException();
         }
 
         System.out.println(request);
@@ -93,7 +99,7 @@ public class SubscribeController {
     }
 
     @PostMapping("/project-files/file/{fileId}/remove")
-    public String unsubscribe(@PathVariable String fileId, @RequestBody InputPayload request){
+    public String unsubscribe(@PathVariable String fileId, @RequestBody InputPayload request) {
         subscribeService.unsubscribe(request, fileId);
         return "{\"text\":\"Unsubscribed\"}";
     }

@@ -3,6 +3,7 @@ package com.mattermost.integration.figma.config.exception.handler;
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaResourceForbiddenException;
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaResourceNotFoundException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionFromDMChannelException;
+import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionInChannelWithoutBotException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -26,7 +27,9 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
         return "{\"type\":\"error\",\"text\":\"Figma resource was forbidden\"}";
     }
 
-    @ExceptionHandler(value = {MMSubscriptionFromDMChannelException.class})
+    @ExceptionHandler(value = {
+            MMSubscriptionFromDMChannelException.class,
+            MMSubscriptionInChannelWithoutBotException.class})
     @ResponseBody
     public String handleMMSubscriptionFromDMChannelException(
             RuntimeException ex, WebRequest request) {

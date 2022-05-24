@@ -10,6 +10,7 @@ public interface SubscribeService {
     void sendSubscriptionFilesToMMChannel(InputPayload payload);
     void unsubscribe(InputPayload payload, String fileKey);
     Set<String> getMMChannelIdsByFileId(Context context, String fileKey);
+    boolean isBotExistsInChannel(InputPayload payload);
 
 
 }

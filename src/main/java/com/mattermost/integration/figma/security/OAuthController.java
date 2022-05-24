@@ -25,6 +25,7 @@ public class OAuthController {
     public String postOauthClientSecret(@RequestBody InputPayload payload) {
 
         FigmaTokenDTO figmaUserToken = oAuthService.getFigmaUserToken(payload);
+
         oAuthService.storeFigmaUserToken(payload, figmaUserToken);
 
         return "{\"text\":\"completed\"}";
