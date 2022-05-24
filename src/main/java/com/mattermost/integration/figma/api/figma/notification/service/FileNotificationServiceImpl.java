@@ -135,6 +135,7 @@ public class FileNotificationServiceImpl implements FileNotificationService {
                     .forEach(webhook -> {
                         figmaWebhookService.deleteWebhook(webhook.getId(), figmaOAuthRefreshTokenResponseDTO.getAccessToken());
                         kvService.delete(WEBHOOK_ID_PREFIX.concat(webhook.getId()), mmSiteUrl, botAccessToken);
+                        kvService.delete(TEAM_WEBHOOK_PREFIX.concat(teamId), mmSiteUrl, botAccessToken);
                     });
         }
     }
