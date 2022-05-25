@@ -9,6 +9,7 @@ import com.mattermost.integration.figma.api.figma.project.service.FigmaProjectSe
 import com.mattermost.integration.figma.api.mm.dm.component.FigmaFilesFormReplyCreator;
 import com.mattermost.integration.figma.api.mm.dm.component.ProjectFormReplyCreator;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
+import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.api.mm.user.MMUserService;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionFromDMChannelException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionInChannelWithoutBotException;
@@ -24,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.util.Optional;
+import java.util.Set;
 
 @RestController
 @Slf4j
@@ -83,8 +86,17 @@ public class SubscribeController {
     @PostMapping("/project-files/file")
     public String sendProjectFile(@RequestBody InputPayload request) throws IOException {
         System.out.println(request);
+        String fileKey = request.getValues().getFile().getValue();
         log.info("Get files: " + request.getValues().getFile().getValue() + " has come");
         log.debug("Get files request: " + request);
+
+        Set<FileInfo> filesByChannelId = subscribeService.getFilesByChannelId(request);
+        Optional<FileInfo> file = filesByChannelId.stream().filter(f -> fileKey.equals(f.getFileId())).findAny();
+
+        if (file.isPresent()) {
+            return String.format("{\"text\":\"This channel is already subscribed to updates about %s\"}", file.get().getFileName());
+        }
+
         subscribeService.subscribe(request);
         return "{\"text\":\"Subscribed\"}";
     }
@@ -94,6 +106,11 @@ public class SubscribeController {
         System.out.println(request);
         log.info("Get Subscriptions for channel: " + request.getContext().getChannel().getId() + " has come");
         log.debug("Get files request: " + request);
+
+        if (!subscribeService.isBotExistsInChannel(request)) {
+            throw new MMSubscriptionInChannelWithoutBotException();
+        }
+
         subscribeService.sendSubscriptionFilesToMMChannel(request);
         return "{\"type\":\"ok\"}";
     }

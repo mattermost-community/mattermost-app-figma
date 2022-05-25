@@ -4,10 +4,7 @@ import com.mattermost.integration.figma.api.figma.comment.service.CommentService
 import com.mattermost.integration.figma.api.figma.user.service.FileOwnerService;
 import com.mattermost.integration.figma.api.mm.dm.component.DMCallButtonMessageCreator;
 import com.mattermost.integration.figma.api.mm.dm.component.DMFormMessageCreator;
-import com.mattermost.integration.figma.api.mm.dm.dto.DMChannelPayload;
-import com.mattermost.integration.figma.api.mm.dm.dto.DMMessageWithPropsFields;
-import com.mattermost.integration.figma.api.mm.dm.dto.DMMessageWithPropsPayload;
-import com.mattermost.integration.figma.api.mm.dm.dto.FileSubscriptionMessage;
+import com.mattermost.integration.figma.api.mm.dm.dto.*;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.api.mm.user.MMUserService;
@@ -113,6 +110,17 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
 
         messageService.sendDMMessage(dmMessageWithPropsPayload);
 
+    }
+
+    @Override
+    public void sendMessage(InputPayload payload , String message) {
+        Context context = payload.getContext();
+        DMMessagePayload messagePayload = new DMMessagePayload();
+        messagePayload.setChannelId(context.getChannel().getId());
+        messagePayload.setMessage(message);
+        messagePayload.setToken(context.getBotAccessToken());
+        messagePayload.setMmSiteUrlBase(context.getMattermostSiteUrl());
+        messageService.sendDMMessage(messagePayload);
     }
 
     public void sendMessageToSpecificReceiver(Context context, UserDataDto specificUserData,
