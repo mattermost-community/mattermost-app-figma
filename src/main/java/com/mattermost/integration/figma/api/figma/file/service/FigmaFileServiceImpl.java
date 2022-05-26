@@ -1,7 +1,9 @@
 package com.mattermost.integration.figma.api.figma.file.service;
 
 import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFilesDTO;
+import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
+import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.security.service.OAuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -22,6 +24,9 @@ public class FigmaFileServiceImpl implements FigmaFileService {
     private OAuthService oAuthService;
 
     @Autowired
+    private UserDataKVService userDataKVService;
+
+    @Autowired
     @Qualifier("figmaRestTemplate")
     private RestTemplate restTemplate;
 
@@ -34,6 +39,17 @@ public class FigmaFileServiceImpl implements FigmaFileService {
         String accessToken = oAuthService.refreshToken(clientId, clientSecret, refreshToken).getAccessToken();
 
 
+        return sendGetProjectFilesRequest(projectId, accessToken);
+    }
+
+    @Override
+    public FigmaProjectFilesDTO getProjectFiles(String projectId, String figmaUserId, String mmUserId, String botAccessToken) {
+        UserDataDto userData = userDataKVService.getUserData(figmaUserId, mmUserId, botAccessToken);
+        String accessToken = oAuthService.refreshToken(userData.getClientId(), userData.getClientSecret(), userData.getRefreshToken()).getAccessToken();
+        return sendGetProjectFilesRequest(projectId, accessToken);
+    }
+
+    private FigmaProjectFilesDTO sendGetProjectFilesRequest(String projectId, String accessToken) {
         String url = String.format(FILES_URL, projectId);
 
         HttpHeaders headers = new HttpHeaders();

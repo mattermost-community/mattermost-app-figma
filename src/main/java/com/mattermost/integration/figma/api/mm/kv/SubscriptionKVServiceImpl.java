@@ -2,27 +2,24 @@ package com.mattermost.integration.figma.api.mm.kv;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
+import com.mattermost.integration.figma.api.mm.kv.dto.ProjectInfo;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFileInfoNotFoundException;
-import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionFromDMChannelException;
+import com.mattermost.integration.figma.config.exception.exceptions.mm.MMProjectInfoNotFoundException;
 import com.mattermost.integration.figma.subscribe.service.dto.FileData;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.FileNotFoundException;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.mattermost.integration.figma.constant.prefixes.subscription.SubscriptionPrefixes.*;
+
 @Service
 public class SubscriptionKVServiceImpl implements SubscriptionKVService {
-
-    private static final String SUBSCRIPTION_FILE_KEY_PREFIX = "subscription-figma-file-";
-    private static final String SUBSCRIPTION_MM_CHANNEL_KEY_PREFIX = "subscription-mm-channel-";
-    private static final String FILE_KEY_PREFIX = "figma-file-";
-
 
     @Autowired
     private KVService kvService;
@@ -31,15 +28,15 @@ public class SubscriptionKVServiceImpl implements SubscriptionKVService {
     private JsonUtils jsonUtils;
 
     @Override
-    public void putFile(FileData fileData, String mmChanelId, String mattermostSiteUrl, String token) {
+    public void putFile(FileData fileData, String mmChannelId, String mattermostSiteUrl, String token) {
         String fileKey = fileData.getFileKey();
         String fileName = fileData.getFileName();
         String subscribedBy = fileData.getSubscribedBy();
 
         putFile(mattermostSiteUrl, token, fileKey, fileName, subscribedBy);
 
-        mapChannelToFile(fileKey, mmChanelId, mattermostSiteUrl, token);
-        mapFileToChannel(fileKey, mmChanelId, mattermostSiteUrl, token);
+        kvService.addValuesToDoubleEndedKvPair(fileKey, mmChannelId, SUBSCRIPTION_FILE_KEY_PREFIX,
+                SUBSCRIPTION_MM_CHANNEL_KEY_PREFIX, mattermostSiteUrl, token);
     }
 
     @Override
@@ -70,23 +67,6 @@ public class SubscriptionKVServiceImpl implements SubscriptionKVService {
         kvService.put(String.format("%s%s", FILE_KEY_PREFIX, fileKey), fileInfo, mattermostSiteUrl, token);
     }
 
-    private void mapFileToChannel(String fileKey, String mmChannelId, String mattermostSiteUrl, String token) {
-        String mmChanelSubscribedFiles = kvService.get(String.format("%s%s", SUBSCRIPTION_MM_CHANNEL_KEY_PREFIX, mmChannelId), mattermostSiteUrl, token);
-        Set<String> files = (Set<String>) jsonUtils.convertStringToObject(mmChanelSubscribedFiles, new TypeReference<Set<String>>() {
-        }).orElse(new HashSet<String>());
-
-        files.add(fileKey);
-        kvService.put(String.format("%s%s", SUBSCRIPTION_MM_CHANNEL_KEY_PREFIX, mmChannelId), files, mattermostSiteUrl, token);
-    }
-
-    private void mapChannelToFile(String fileKey, String mmChanelId, String mattermostSiteUrl, String token) {
-        String mmSubscribedChannels = kvService.get(String.format("%s%s", SUBSCRIPTION_FILE_KEY_PREFIX, fileKey), mattermostSiteUrl, token);
-        Set<String> channels = (Set<String>) jsonUtils.convertStringToObject(mmSubscribedChannels, new TypeReference<Set<String>>() {
-        }).orElse(new HashSet<String>());
-        channels.add(mmChanelId);
-        kvService.put(String.format("%s%s", SUBSCRIPTION_FILE_KEY_PREFIX, fileKey), channels, mattermostSiteUrl, token);
-    }
-
     @Override
     public Set<FileInfo> getFilesByMMChannelId(String mmChannelId, String mattermostSiteUrl, String token) {
         String mmChanelSubscribedFiles = kvService.get(String.format("%s%s", SUBSCRIPTION_MM_CHANNEL_KEY_PREFIX, mmChannelId), mattermostSiteUrl, token);
@@ -104,45 +84,56 @@ public class SubscriptionKVServiceImpl implements SubscriptionKVService {
 
     @Override
     public Set<String> getMMChannelIdsByFileId(String figmaFileId, String mattermostSiteUrl, String token) {
-        String mmSubscribedChannels = kvService.get(String.format("%s%s", SUBSCRIPTION_FILE_KEY_PREFIX, figmaFileId), mattermostSiteUrl, token);
-
-        if (mmSubscribedChannels.isBlank()) {
-            return new HashSet<String>();
-        }
-
-        return (Set<String>) jsonUtils.convertStringToObject(mmSubscribedChannels, new TypeReference<Set<String>>() {
-        }).orElse(new HashSet<String>());
+        return kvService.getSetFromKv(figmaFileId, mattermostSiteUrl, token, SUBSCRIPTION_FILE_KEY_PREFIX);
     }
 
     @Override
     public void unsubscribeFileFromChannel(String fileKey, String mmChannelId, String mattermostSiteUrl, String token) {
-        removeFileFromChannel(fileKey, mmChannelId, mattermostSiteUrl, token);
-        removeChannelFromFile(fileKey, mmChannelId, mattermostSiteUrl, token);
+        kvService.deleteValuesFromDoubleEndedKvPair(fileKey, mmChannelId, SUBSCRIPTION_FILE_KEY_PREFIX, SUBSCRIPTION_MM_CHANNEL_KEY_PREFIX, mattermostSiteUrl, token);
     }
 
-    private void removeFileFromChannel(String fileKey, String mmChannelId, String mattermostSiteUrl, String token) {
-        String mmChanelSubscribedFiles = kvService.get(String.format("%s%s", SUBSCRIPTION_MM_CHANNEL_KEY_PREFIX, mmChannelId), mattermostSiteUrl, token);
-
-        if (mmChanelSubscribedFiles.isBlank()) {
-            return;
+    @Override
+    public Optional<ProjectInfo> getProjectById(String projectId, String mattermostSiteUrl, String token) {
+        String projectString = kvService.get(PROJECT_KEY_PREFIX.concat(projectId), mattermostSiteUrl, token);
+        if (projectString.isBlank()) {
+            return Optional.empty();
         }
-        Set<String> files = (Set<String>) jsonUtils.convertStringToObject(mmChanelSubscribedFiles, new TypeReference<Set<String>>() {
-        }).get();
-        files.removeIf(s -> s.equals(fileKey));
-        kvService.put(String.format("%s%s", SUBSCRIPTION_MM_CHANNEL_KEY_PREFIX, mmChannelId), files, mattermostSiteUrl, token);
+        return Optional.of((ProjectInfo) jsonUtils.convertStringToObject(projectString, ProjectInfo.class).orElse(Optional.empty()));
     }
 
-    private void removeChannelFromFile(String fileKey, String mmChannelId, String mattermostSiteUrl, String token) {
-        String mmSubscribedChannelsToFile = kvService.get(String.format("%s%s", SUBSCRIPTION_FILE_KEY_PREFIX, fileKey), mattermostSiteUrl, token);
-
-        if (mmSubscribedChannelsToFile.isBlank()) {
-            return;
-        }
-
-        Set<String> mmChannels = (Set<String>) jsonUtils.convertStringToObject(mmSubscribedChannelsToFile, new TypeReference<Set<String>>() {
-        }).get();
-        mmChannels.removeIf(channel -> channel.equals(mmChannelId));
-        kvService.put(String.format("%s%s", SUBSCRIPTION_FILE_KEY_PREFIX, fileKey), mmChannels, mattermostSiteUrl, token);
+    @Override
+    public Set<String> getMMChannelIdsByProjectId(String projectId, String mattermostSiteUrl, String token) {
+        return kvService.getSetFromKv(projectId, mattermostSiteUrl, token, SUBSCRIPTION_PROJECT_TO_MM_CHANNEL_PREFIX);
     }
 
+    @Override
+    public Set<String> getProjectIdsByChannelId(String channelId, String mattermostSiteUrl, String token) {
+        return kvService.getSetFromKv(channelId, mattermostSiteUrl, token, SUBSCRIPTION_MM_CHANNEL_TO_PROJECT_PREFIX);
+    }
+
+    @Override
+    public Set<ProjectInfo> getProjectsByMMChannelId(String channelId, String mattermostSiteUrl, String token) {
+        Set<String> projectIds = getProjectIdsByChannelId(channelId, mattermostSiteUrl, token);
+        return projectIds.stream().map(projectId -> getProjectById(projectId, mattermostSiteUrl, token)
+                .orElseThrow(() -> new MMProjectInfoNotFoundException(projectId))).collect(Collectors.toSet());
+    }
+
+    @Override
+    public void putProject(String projectId, String projectName, String subscribedBy, String channelId, String mmSiteUrl, String botAccessToken) {
+        String projectString = kvService.get(String.format("%s%s", PROJECT_KEY_PREFIX, projectId), mmSiteUrl, botAccessToken);
+        ProjectInfo projectInfo = (ProjectInfo) jsonUtils.convertStringToObject(projectString, ProjectInfo.class).orElse(new ProjectInfo());
+
+        projectInfo.setProjectId(projectId);
+        projectInfo.setName(projectName);
+        projectInfo.setUserId(subscribedBy);
+        projectInfo.setCreatedAt(LocalDate.now());
+
+        kvService.put(String.format("%s%s", PROJECT_KEY_PREFIX, projectId), projectInfo, mmSiteUrl, botAccessToken);
+        kvService.addValuesToDoubleEndedKvPair(projectId, channelId, SUBSCRIPTION_PROJECT_TO_MM_CHANNEL_PREFIX, SUBSCRIPTION_MM_CHANNEL_TO_PROJECT_PREFIX, mmSiteUrl, botAccessToken);
+    }
+
+    @Override
+    public void unsubscribeProjectFromChannel(String projectId, String mmChannelId, String mattermostSiteUrl, String token) {
+        kvService.deleteValuesFromDoubleEndedKvPair(projectId, mmChannelId, SUBSCRIPTION_PROJECT_TO_MM_CHANNEL_PREFIX, SUBSCRIPTION_MM_CHANNEL_TO_PROJECT_PREFIX, mattermostSiteUrl, token);
+    }
 }

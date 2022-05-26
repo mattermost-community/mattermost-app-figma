@@ -7,12 +7,21 @@ import com.mattermost.integration.figma.input.oauth.InputPayload;
 import java.util.Set;
 
 public interface SubscribeService {
-    void subscribe(InputPayload payload);
+    void subscribeToFile(InputPayload payload);
+
     void sendSubscriptionFilesToMMChannel(InputPayload payload);
-    void unsubscribe(InputPayload payload, String fileKey);
+
+    void unsubscribeFromFile(InputPayload payload, String fileKey);
+
     Set<String> getMMChannelIdsByFileId(Context context, String fileKey);
+
     Set<FileInfo> getFilesByChannelId(InputPayload request);
+
     boolean isBotExistsInChannel(InputPayload payload);
 
+    Set<String> getMMChannelIdsByProjectId(Context context, String projectId);
 
+    void unsubscribeFromProject(InputPayload payload, String projectId);
+
+    void subscribeToProject(InputPayload payload);
 }

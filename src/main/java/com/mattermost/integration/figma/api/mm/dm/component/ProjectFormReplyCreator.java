@@ -4,6 +4,7 @@ import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
 import com.mattermost.integration.figma.input.mm.form.*;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,7 +36,12 @@ public class ProjectFormReplyCreator {
         builder.isRequired(true);
         builder.label("Project");
         builder.options(createOptions(teamProjectDTO));
-        return Collections.singletonList(builder.build());
+        Field.FieldBuilder<?, ?> field = Field.builder();
+        field.name("is_project_subscription");
+        field.type("bool");
+        field.isRequired(false);
+        field.label("Subscribe to current project");
+        return Arrays.asList(builder.build(), field.build());
     }
 
     private List<Option> createOptions(TeamProjectDTO teamProjectDTO) {
@@ -56,6 +62,7 @@ public class ProjectFormReplyCreator {
         expand.setApp(ALL);
         expand.setOauth2App(ALL);
         expand.setOauth2User(ALL);
+        expand.setChannel(ALL);
         return expand;
     }
 

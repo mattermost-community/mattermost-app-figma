@@ -1,6 +1,7 @@
 package com.mattermost.integration.figma.input.oauth;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.mattermost.integration.figma.input.mm.form.Field;
 import com.mattermost.integration.figma.input.mm.form.MMStaticSelectField;
 import lombok.Data;
 
@@ -22,4 +23,6 @@ public class Values{
     private MMStaticSelectField project;
     @JsonProperty("file_id")
     private MMStaticSelectField file;
+    @JsonProperty("is_project_subscription")
+    private String isProjectSubscription;
 }

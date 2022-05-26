@@ -1,5 +1,11 @@
 package com.mattermost.integration.figma.api.figma.notification.service;
 
+import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFileDTO;
+import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFilesDTO;
+import com.mattermost.integration.figma.api.figma.file.service.FigmaFileService;
+import com.mattermost.integration.figma.api.figma.project.dto.ProjectDTO;
+import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
+import com.mattermost.integration.figma.api.figma.project.service.FigmaProjectService;
 import com.mattermost.integration.figma.api.figma.webhook.dto.Webhook;
 import com.mattermost.integration.figma.api.figma.webhook.service.FigmaWebhookService;
 import com.mattermost.integration.figma.api.mm.dm.service.DMMessageSenderService;
@@ -25,8 +31,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static org.apache.logging.log4j.util.Strings.isBlank;
 
@@ -59,13 +69,17 @@ public class FileNotificationServiceImpl implements FileNotificationService {
     private KVService kvService;
     @Autowired
     private JsonUtils jsonUtils;
+    @Autowired
+    private FigmaProjectService figmaProjectService;
+    @Autowired
+    private FigmaFileService figmaFileService;
 
 
     public void sendFileNotificationMessageToMMSubscribedChannels(FileCommentWebhookResponse fileCommentWebhookResponse) {
-
         FigmaWebhookResponse figmaData = fileCommentWebhookResponse.getValues().getData();
         Set<String> mmSubscribedChannels = subscribeService.getMMChannelIdsByFileId(fileCommentWebhookResponse.getContext(), figmaData.getFileKey());
         mmSubscribedChannels.forEach(ch -> dmMessageSenderService.sendMessageToSubscribedChannel(ch, fileCommentWebhookResponse));
+        sendNotificationsForSubscribedProjects(fileCommentWebhookResponse);
     }
 
     public SubscribeToFileNotification subscribeToFileNotification(InputPayload inputPayload) {
@@ -165,5 +179,25 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         kvService.put(WEBHOOK_ID_PREFIX.concat(webhook.getId()), inputPayload.getContext().getOauth2().getUser().getUserId(), mmSiteUrl, botAccessToken);
         kvService.put(TEAM_WEBHOOK_PREFIX.concat(teamId), webhook.getId(), mmSiteUrl, botAccessToken);
         userDataKVService.saveNewTeamToAllTeamIdsSet(teamId, mmSiteUrl, botAccessToken);
+    }
+
+    private void sendNotificationsForSubscribedProjects(FileCommentWebhookResponse fileCommentWebhookResponse) {
+        FigmaWebhookResponse figmaData = fileCommentWebhookResponse.getValues().getData();
+        Context context = fileCommentWebhookResponse.getContext();
+        String mattermostSiteUrl = context.getMattermostSiteUrl();
+        String botAccessToken = context.getBotAccessToken();
+        String commenterTeamId = figmaWebhookService.getCurrentUserTeamId(figmaData.getWebhookId(),
+                mattermostSiteUrl, botAccessToken);
+        String commenterId = figmaData.getTriggeredBy().getId();
+        TeamProjectDTO teamProjects = figmaProjectService.getProjectsByTeamId(commenterTeamId, commenterId, mattermostSiteUrl, botAccessToken);
+
+        for (ProjectDTO projectDTO : teamProjects.getProjects()) {
+            List<FigmaProjectFileDTO> projectFiles = figmaFileService.getProjectFiles(projectDTO.getId(), commenterId, mattermostSiteUrl, botAccessToken).getFiles();
+            Optional<FigmaProjectFileDTO> triggeredFile = projectFiles.stream().filter(file -> file.getKey().equals(figmaData.getFileKey())).findFirst();
+            if (triggeredFile.isPresent()) {
+                Set<String> channelIds = subscribeService.getMMChannelIdsByProjectId(context, projectDTO.getId());
+                channelIds.forEach(ch -> dmMessageSenderService.sendMessageToSubscribedChannel(ch, fileCommentWebhookResponse));
+            }
+        }
     }
 }

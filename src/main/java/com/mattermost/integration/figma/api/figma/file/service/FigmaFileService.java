@@ -6,4 +6,5 @@ import com.mattermost.integration.figma.input.oauth.InputPayload;
 public interface FigmaFileService {
 
     FigmaProjectFilesDTO getProjectFiles(InputPayload inputPayload);
+    FigmaProjectFilesDTO getProjectFiles(String projectId, String figmaUserId, String mmUserId, String botAccessToken);
 }

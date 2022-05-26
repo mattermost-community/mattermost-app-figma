@@ -41,9 +41,6 @@ public class SubscribeController {
     private FigmaProjectService figmaProjectService;
     @Autowired
     private FigmaFileService figmaFileService;
-    @Autowired
-    private JsonUtils jsonUtils;
-
 
     @PostMapping("/subscribe")
     public FormType subscribeToFileComment(@RequestBody InputPayload request) {
@@ -71,8 +68,13 @@ public class SubscribeController {
     }
 
     @PostMapping("/project-files")
-    public FormType sendProjectFiles(@RequestBody InputPayload request) throws IOException {
+    public Object sendProjectFiles(@RequestBody InputPayload request) throws IOException {
         System.out.println(request);
+        if (request.getValues().getIsProjectSubscription().equals("true")) {
+            subscribeService.subscribeToProject(request);
+            return "{\"text\":\"Subscribed\"}";
+        }
+
         log.info("Get files for project: " + request.getValues().getProject().getValue() + " has come");
         log.debug("Get files for project request: " + request);
 
@@ -97,7 +99,7 @@ public class SubscribeController {
             return String.format("{\"text\":\"This channel is already subscribed to updates about %s\"}", file.get().getFileName());
         }
 
-        subscribeService.subscribe(request);
+        subscribeService.subscribeToFile(request);
         return "{\"text\":\"Subscribed\"}";
     }
 
@@ -117,7 +119,13 @@ public class SubscribeController {
 
     @PostMapping("/project-files/file/{fileId}/remove")
     public String unsubscribe(@PathVariable String fileId, @RequestBody InputPayload request) {
-        subscribeService.unsubscribe(request, fileId);
+        subscribeService.unsubscribeFromFile(request, fileId);
+        return "{\"text\":\"Unsubscribed\"}";
+    }
+
+    @PostMapping("/project/{projectId}/remove")
+    public String unsubscribeFromProject(@PathVariable String projectId, @RequestBody InputPayload request) {
+        subscribeService.unsubscribeFromProject(request, projectId);
         return "{\"text\":\"Unsubscribed\"}";
     }
 }

@@ -1,7 +1,11 @@
 package com.mattermost.integration.figma.api.figma.project.service;
 
+import com.mattermost.integration.figma.api.figma.file.service.FigmaFileServiceImpl;
 import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
+import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
+import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
+import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.security.service.OAuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -15,7 +19,7 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class FigmaProjectServiceImpl implements FigmaProjectService {
 
-    private String PROJECT_BY_TEAM_URL = "https://api.figma.com/v1/teams/%s/projects";
+    private final String PROJECT_BY_TEAM_URL = "https://api.figma.com/v1/teams/%s/projects";
 
     @Autowired
     @Qualifier("figmaRestTemplate")
@@ -23,6 +27,9 @@ public class FigmaProjectServiceImpl implements FigmaProjectService {
 
     @Autowired
     private OAuthService oAuthService;
+
+    @Autowired
+    private UserDataKVService userDataKVService;
 
     @Override
     public TeamProjectDTO getProjectsByTeamId(InputPayload inputPayload) {
@@ -35,8 +42,19 @@ public class FigmaProjectServiceImpl implements FigmaProjectService {
 
         String accessToken = oAuthService.refreshToken(clientId, clientSecret, refreshToken).getAccessToken();
 
-        String url = String.format(PROJECT_BY_TEAM_URL, teamId);
+        return sendGetProjectRequest(teamId, accessToken);
+    }
 
+    @Override
+    public TeamProjectDTO getProjectsByTeamId(String teamId, String figmaUserId, String mmSiteUrl, String botAccessToken) {
+        UserDataDto userData = userDataKVService.getUserData(figmaUserId, mmSiteUrl, botAccessToken);
+        String accessToken = oAuthService.refreshToken(userData.getClientId(), userData.getClientSecret(),
+                userData.getRefreshToken()).getAccessToken();
+        return sendGetProjectRequest(teamId, accessToken);
+    }
+
+    private TeamProjectDTO sendGetProjectRequest(String teamId, String accessToken) {
+        String url = String.format(PROJECT_BY_TEAM_URL, teamId);
         HttpHeaders headers = new HttpHeaders();
 
         headers.set("Authorization", String.format("Bearer %s", accessToken));
