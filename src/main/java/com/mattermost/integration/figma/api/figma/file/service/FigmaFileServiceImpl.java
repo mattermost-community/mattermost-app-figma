@@ -43,8 +43,8 @@ public class FigmaFileServiceImpl implements FigmaFileService {
     }
 
     @Override
-    public FigmaProjectFilesDTO getProjectFiles(String projectId, String figmaUserId, String mmUserId, String botAccessToken) {
-        UserDataDto userData = userDataKVService.getUserData(figmaUserId, mmUserId, botAccessToken);
+    public FigmaProjectFilesDTO getProjectFiles(String projectId, String figmaUserId, String mmSiteUrl, String botAccessToken) {
+        UserDataDto userData = userDataKVService.getUserData(figmaUserId, mmSiteUrl, botAccessToken);
         String accessToken = oAuthService.refreshToken(userData.getClientId(), userData.getClientSecret(), userData.getRefreshToken()).getAccessToken();
         return sendGetProjectFilesRequest(projectId, accessToken);
     }

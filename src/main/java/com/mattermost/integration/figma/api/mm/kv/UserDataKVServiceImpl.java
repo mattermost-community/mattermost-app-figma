@@ -28,6 +28,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
     private final static String USER_KV_PREFIX = "figma-user-id-";
     private final static String FIGMA_TEAM_ID_PREFIX = "figma-team-id-";
     private final static String ALL_TEAMS = "ALL_TEAMS";
+    private final static String MM_USER_ID_PREFIX = "mm-user-id-";
 
     public UserDataKVServiceImpl(KVService kvService, JsonUtils jsonUtils, DataEncryptionService dataEncryptionService) {
         this.kvService = kvService;
@@ -132,6 +133,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
         currentData.setMmUserId(inputPayload.getContext().getActingUser().getId());
 
         kvService.put(USER_KV_PREFIX.concat(userId), currentData, mmSiteUrl, botAccessToken);
+        kvService.put(MM_USER_ID_PREFIX.concat(inputPayload.getContext().getActingUser().getId()), userId, mmSiteUrl, botAccessToken);
     }
 
     private Set<String> getSetFromKV(String key, String mmSiteUrl, String botAccessToken) {
