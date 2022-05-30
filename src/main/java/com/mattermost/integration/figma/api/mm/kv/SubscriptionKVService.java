@@ -25,6 +25,8 @@ public interface SubscriptionKVService {
 
     void putProject(String projectId, String projectName, String subscribedBy, String channelId, String mmSiteUrl, String botAccessToken);
 
+    void updateProject(String mattermostSiteUrl, String token, ProjectInfo projectInfo);
+
     Set<ProjectInfo> getProjectsByMMChannelId(String channelId, String mattermostSiteUrl, String token);
 
     Set<String> getProjectIdsByChannelId(String channelId, String mattermostSiteUrl, String token);

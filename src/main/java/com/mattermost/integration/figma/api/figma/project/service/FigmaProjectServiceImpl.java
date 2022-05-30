@@ -1,10 +1,12 @@
 package com.mattermost.integration.figma.api.figma.project.service;
 
-import com.mattermost.integration.figma.api.figma.file.service.FigmaFileServiceImpl;
 import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
+import com.mattermost.integration.figma.api.figma.webhook.service.FigmaWebhookService;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
+import com.mattermost.integration.figma.input.figma.notification.FigmaWebhookResponse;
+import com.mattermost.integration.figma.input.figma.notification.FileCommentWebhookResponse;
+import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
-import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
 import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.security.service.OAuthService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +33,25 @@ public class FigmaProjectServiceImpl implements FigmaProjectService {
     @Autowired
     private UserDataKVService userDataKVService;
 
+    @Autowired
+    private FigmaWebhookService figmaWebhookService;
+
+
+    @Override
+    public TeamProjectDTO getProjectsByTeamId(FileCommentWebhookResponse response) {
+        FigmaWebhookResponse figmaData = response.getValues().getData();
+        String botAccessToken = response.getContext().getBotAccessToken();
+
+        Context context = response.getContext();
+        String mattermostSiteUrl = context.getMattermostSiteUrl();
+        String commenterTeamId = figmaWebhookService.getCurrentUserTeamId(figmaData.getWebhookId(),
+                mattermostSiteUrl, botAccessToken);
+        String commenterId = figmaData.getTriggeredBy().getId();
+        return getProjectsByTeamId(commenterTeamId, commenterId, mattermostSiteUrl, botAccessToken);
+    }
+
     @Override
     public TeamProjectDTO getProjectsByTeamId(InputPayload inputPayload) {
-
-
         String teamId = inputPayload.getValues().getTeamId();
         String refreshToken = inputPayload.getContext().getOauth2().getUser().getRefreshToken();
         String clientId = inputPayload.getContext().getOauth2().getClientId();

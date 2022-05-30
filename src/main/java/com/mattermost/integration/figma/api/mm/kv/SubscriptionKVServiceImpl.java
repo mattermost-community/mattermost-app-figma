@@ -133,6 +133,12 @@ public class SubscriptionKVServiceImpl implements SubscriptionKVService {
     }
 
     @Override
+    public void updateProject(String mattermostSiteUrl, String token, ProjectInfo projectInfo) {
+        kvService.put(String.format("%s%s", PROJECT_KEY_PREFIX, projectInfo.getProjectId()), projectInfo, mattermostSiteUrl, token);
+
+    }
+
+    @Override
     public void unsubscribeProjectFromChannel(String projectId, String mmChannelId, String mattermostSiteUrl, String token) {
         kvService.deleteValuesFromDoubleEndedKvPair(projectId, mmChannelId, SUBSCRIPTION_PROJECT_TO_MM_CHANNEL_PREFIX, SUBSCRIPTION_MM_CHANNEL_TO_PROJECT_PREFIX, mattermostSiteUrl, token);
     }
