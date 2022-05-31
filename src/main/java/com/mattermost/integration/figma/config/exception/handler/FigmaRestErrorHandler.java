@@ -1,5 +1,6 @@
 package com.mattermost.integration.figma.config.exception.handler;
 
+import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaBasicTeamSubscriptionException;
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaResourceForbiddenException;
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaResourceNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,10 @@ public class FigmaRestErrorHandler implements ResponseErrorHandler {
     public void handleError(ClientHttpResponse response) throws IOException {
         if (response.getStatusCode() == HttpStatus.NOT_FOUND) {
             throw new FigmaResourceNotFoundException();
+        }
+
+        if (response.getStatusCode() == HttpStatus.BAD_REQUEST) {
+            throw new FigmaBasicTeamSubscriptionException();
         }
 
         if (response.getStatusCode() == HttpStatus.FORBIDDEN) {

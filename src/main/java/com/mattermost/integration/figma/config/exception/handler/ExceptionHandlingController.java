@@ -1,5 +1,6 @@
 package com.mattermost.integration.figma.config.exception.handler;
 
+import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaBasicTeamSubscriptionException;
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaResourceForbiddenException;
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaResourceNotFoundException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionFromDMChannelException;
@@ -31,7 +32,8 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
     @ExceptionHandler(value = {
             MMSubscriptionFromDMChannelException.class,
             MMSubscriptionInChannelWithoutBotException.class,
-            MMSubscriptionToFileInSubscribedProjectException.class
+            MMSubscriptionToFileInSubscribedProjectException.class,
+            FigmaBasicTeamSubscriptionException.class
     })
     @ResponseBody
     public String handleMMSubscriptionFromDMChannelException(
