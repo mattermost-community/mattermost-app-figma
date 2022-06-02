@@ -5,6 +5,7 @@ import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.api.mm.kv.dto.ProjectInfo;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFileInfoNotFoundException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMProjectInfoNotFoundException;
+import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.subscribe.service.dto.FileData;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,13 +30,9 @@ public class SubscriptionKVServiceImpl implements SubscriptionKVService {
 
     @Override
     public void putFile(FileData fileData, String mmChannelId, String mattermostSiteUrl, String token) {
-        String fileKey = fileData.getFileKey();
-        String fileName = fileData.getFileName();
-        String subscribedBy = fileData.getSubscribedBy();
+        putFile(mattermostSiteUrl, token, fileData);
 
-        putFile(mattermostSiteUrl, token, fileKey, fileName, subscribedBy);
-
-        kvService.addValuesToDoubleEndedKvPair(fileKey, mmChannelId, SUBSCRIPTION_FILE_KEY_PREFIX,
+        kvService.addValuesToDoubleEndedKvPair(fileData.getFileKey(), mmChannelId, SUBSCRIPTION_FILE_KEY_PREFIX,
                 SUBSCRIPTION_MM_CHANNEL_KEY_PREFIX, mattermostSiteUrl, token);
     }
 
@@ -54,15 +51,18 @@ public class SubscriptionKVServiceImpl implements SubscriptionKVService {
         kvService.put(String.format("%s%s", FILE_KEY_PREFIX, fileInfo.getFileId()), fileInfo, mattermostSiteUrl, token);
     }
 
-    private void putFile(String mattermostSiteUrl, String token, String fileKey, String fileName, String subscribedBy) {
+    private void putFile(String mattermostSiteUrl, String token, FileData fileData) {
+        String fileKey = fileData.getFileKey();
+
         String fileString = kvService.get(String.format("%s%s", FILE_KEY_PREFIX, fileKey), mattermostSiteUrl, token);
         FileInfo fileInfo = (FileInfo) jsonUtils.convertStringToObject(fileString, new TypeReference<FileInfo>() {
         }).orElse(new FileInfo());
 
         fileInfo.setFileId(fileKey);
-        fileInfo.setFileName(fileName);
-        fileInfo.setUserId(subscribedBy);
+        fileInfo.setFileName(fileData.getFileName());
+        fileInfo.setUserId(fileData.getSubscribedBy());
         fileInfo.setCreatedAt(LocalDate.now());
+        fileInfo.setFigmaUserId(fileData.getFigmaUserId());
 
         kvService.put(String.format("%s%s", FILE_KEY_PREFIX, fileKey), fileInfo, mattermostSiteUrl, token);
     }
@@ -119,7 +119,16 @@ public class SubscriptionKVServiceImpl implements SubscriptionKVService {
     }
 
     @Override
-    public void putProject(String projectId, String projectName, String subscribedBy, String channelId, String mmSiteUrl, String botAccessToken) {
+    public void putProject(InputPayload payload) {
+
+        String channelId = payload.getContext().getChannel().getId();
+        String mmSiteUrl = payload.getContext().getMattermostSiteUrl();
+        String botAccessToken = payload.getContext().getBotAccessToken();
+        String projectId = payload.getValues().getProject().getValue();
+        String projectName = payload.getValues().getProject().getLabel();
+        String subscribedBy = payload.getContext().getActingUser().getId();
+        String figmaUserId = payload.getContext().getOauth2().getUser().getUserId();
+
         String projectString = kvService.get(String.format("%s%s", PROJECT_KEY_PREFIX, projectId), mmSiteUrl, botAccessToken);
         ProjectInfo projectInfo = (ProjectInfo) jsonUtils.convertStringToObject(projectString, ProjectInfo.class).orElse(new ProjectInfo());
 
@@ -127,6 +136,7 @@ public class SubscriptionKVServiceImpl implements SubscriptionKVService {
         projectInfo.setName(projectName);
         projectInfo.setUserId(subscribedBy);
         projectInfo.setCreatedAt(LocalDate.now());
+        projectInfo.setFigmaUserId(figmaUserId);
 
         kvService.put(String.format("%s%s", PROJECT_KEY_PREFIX, projectId), projectInfo, mmSiteUrl, botAccessToken);
         kvService.addValuesToDoubleEndedKvPair(projectId, channelId, SUBSCRIPTION_PROJECT_TO_MM_CHANNEL_PREFIX, SUBSCRIPTION_MM_CHANNEL_TO_PROJECT_PREFIX, mmSiteUrl, botAccessToken);

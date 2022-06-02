@@ -2,6 +2,7 @@ package com.mattermost.integration.figma.api.mm.kv;
 
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.api.mm.kv.dto.ProjectInfo;
+import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.subscribe.service.dto.FileData;
 
 import java.util.Optional;
@@ -23,7 +24,7 @@ public interface SubscriptionKVService {
 
     void unsubscribeProjectFromChannel(String projectId, String mmChannelId, String mattermostSiteUrl, String token);
 
-    void putProject(String projectId, String projectName, String subscribedBy, String channelId, String mmSiteUrl, String botAccessToken);
+    void putProject(InputPayload payload);
 
     void updateProject(String mattermostSiteUrl, String token, ProjectInfo projectInfo);
 

@@ -10,4 +10,5 @@ public class ProjectInfo {
     private String name;
     private String userId;
     private LocalDate createdAt;
+    private String figmaUserId;
 }

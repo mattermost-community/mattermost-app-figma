@@ -1,7 +1,6 @@
 package com.mattermost.integration.figma.api.figma.notification.service;
 
 import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFileDTO;
-import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFilesDTO;
 import com.mattermost.integration.figma.api.figma.file.service.FigmaFileService;
 import com.mattermost.integration.figma.api.figma.project.dto.ProjectDTO;
 import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
@@ -35,8 +34,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static org.apache.logging.log4j.util.Strings.isBlank;
 
@@ -82,14 +79,11 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         sendNotificationsForSubscribedProjects(fileCommentWebhookResponse);
     }
 
-    public SubscribeToFileNotification subscribeToFileNotification(InputPayload inputPayload) {
-        String teamId = inputPayload.getValues().getTeamId();
-        if (teamId == null || teamId.isEmpty() || teamId.isBlank()) {
-            return SubscribeToFileNotification.BAD_TEAM_ID;
-        }
+    public void subscribeToFileNotification(InputPayload inputPayload) {
 
         String mmSiteUrl = inputPayload.getContext().getMattermostSiteUrl();
         String botAccessToken = inputPayload.getContext().getBotAccessToken();
+        String teamId = inputPayload.getValues().getTeamId();
 
         deleteExistingFileCommentWebhook(teamId, mmSiteUrl, botAccessToken);
 
@@ -101,8 +95,6 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         ResponseEntity<String> stringResponseEntity = figmaRestTemplate.postForEntity(BASE_WEBHOOK_URL, request, String.class);
         Webhook webhook = (Webhook) jsonUtils.convertStringToObject(stringResponseEntity.getBody(), Webhook.class).get();
         saveNecessaryDataToKv(inputPayload, webhook);
-
-        return SubscribeToFileNotification.SUBSCRIBED;
     }
 
     public void sendFileNotificationMessageToMM(FileCommentWebhookResponse fileCommentWebhookResponse) {

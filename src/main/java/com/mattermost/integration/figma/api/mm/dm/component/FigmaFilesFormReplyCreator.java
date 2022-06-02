@@ -12,18 +12,18 @@ public class FigmaFilesFormReplyCreator {
     private static final String ALL = "all";
 
 
-    public FormType create(FigmaProjectFilesDTO projectFilesDTO) {
+    public FormType create(FigmaProjectFilesDTO projectFilesDTO, String teamId) {
         FormType.FormTypeBuilder builder = FormType.builder();
         builder.type("form");
-        builder.form(createForm(projectFilesDTO));
+        builder.form(createForm(projectFilesDTO, teamId));
         return builder.build();
     }
 
-    private Form createForm(FigmaProjectFilesDTO projectFilesDTO) {
+    private Form createForm(FigmaProjectFilesDTO projectFilesDTO, String teamId) {
         Form.FormBuilder<?, ?> builder = Form.builder();
         builder.fields(createField(projectFilesDTO));
         builder.title("Figma project files");
-        builder.submit(createSubmit());
+        builder.submit(createSubmit(teamId));
         return builder.build();
     }
 
@@ -41,8 +41,8 @@ public class FigmaFilesFormReplyCreator {
         return projectFilesDTO.getFiles().stream().map(f -> Option.builder().label(f.getName()).value(f.getKey()).build()).collect(Collectors.toList());
     }
 
-    private Submit createSubmit() {
-        String replyPath = "/project-files/file";
+    private Submit createSubmit(String teamId) {
+        String replyPath = String.format("/%s/projects/file", teamId);
         Submit submit = new Submit();
         submit.setPath(replyPath);
         submit.setExpand(prepareExpand());

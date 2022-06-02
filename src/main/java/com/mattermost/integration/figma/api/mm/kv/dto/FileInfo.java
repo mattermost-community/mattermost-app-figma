@@ -13,4 +13,5 @@ public class FileInfo {
     private String fileName;
     private String userId;
     private LocalDate createdAt;
+    private String figmaUserId;
 }

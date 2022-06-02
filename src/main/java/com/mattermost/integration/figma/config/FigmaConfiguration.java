@@ -32,7 +32,7 @@ public class FigmaConfiguration {
     }
 
     @Bean(name = "figmaRestTemplate")
-    public RestTemplate figmaRestTemplate(){
+    public RestTemplate figmaRestTemplate() {
         return new RestTemplateBuilder().errorHandler(new FigmaRestErrorHandler()).build();
     }
 

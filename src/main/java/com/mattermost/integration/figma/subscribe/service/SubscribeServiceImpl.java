@@ -1,7 +1,6 @@
 package com.mattermost.integration.figma.subscribe.service;
 
 import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFileDTO;
-import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFilesDTO;
 import com.mattermost.integration.figma.api.figma.file.service.FigmaFileService;
 import com.mattermost.integration.figma.api.mm.dm.service.DMMessageSenderService;
 import com.mattermost.integration.figma.api.mm.kv.KVService;
@@ -15,7 +14,6 @@ import com.mattermost.integration.figma.input.mm.form.MMStaticSelectField;
 import com.mattermost.integration.figma.input.mm.user.MMChannelUser;
 import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
-import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.subscribe.service.dto.FileData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,7 +21,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class SubscribeServiceImpl implements SubscribeService {
@@ -54,8 +51,10 @@ public class SubscribeServiceImpl implements SubscribeService {
         MMStaticSelectField file = payload.getValues().getFile();
         String mmChannelID = payload.getContext().getChannel().getId();
         String botAccessToken = payload.getContext().getBotAccessToken();
+        String figmaUserId = payload.getContext().getOauth2().getUser().getUserId();
         FileData fileData = new FileData();
         fileData.setFileKey(file.getValue());
+        fileData.setFigmaUserId(figmaUserId);
         fileData.setFileName(file.getLabel());
         fileData.setSubscribedBy(payload.getContext().getActingUser().getId());
         checkIfFileIsNotInSubscribedProjects(payload);
@@ -113,14 +112,7 @@ public class SubscribeServiceImpl implements SubscribeService {
     }
 
     public void subscribeToProject(InputPayload payload) {
-        String channelId = payload.getContext().getChannel().getId();
-        String mattermostSiteUrl = payload.getContext().getMattermostSiteUrl();
-        String botAccessToken = payload.getContext().getBotAccessToken();
-        String projectId = payload.getValues().getProject().getValue();
-        String projectName = payload.getValues().getProject().getLabel();
-        String subscribedBy = payload.getContext().getActingUser().getId();
-
-        subscriptionKVService.putProject(projectId, projectName, subscribedBy, channelId, mattermostSiteUrl, botAccessToken);
+        subscriptionKVService.putProject(payload);
         checkIfProjectHasSubscribedFiles(payload);
     }
 

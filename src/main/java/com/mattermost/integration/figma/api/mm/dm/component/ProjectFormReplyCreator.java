@@ -5,7 +5,6 @@ import com.mattermost.integration.figma.input.mm.form.*;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -14,18 +13,18 @@ public class ProjectFormReplyCreator {
     private static final String ALL = "all";
 
 
-    public FormType create(TeamProjectDTO teamProjectDTO) {
+    public FormType create(TeamProjectDTO teamProjectDTO, String teamId) {
         FormType.FormTypeBuilder builder = FormType.builder();
         builder.type("form");
-        builder.form(createForm(teamProjectDTO));
+        builder.form(createForm(teamProjectDTO, teamId));
         return builder.build();
     }
 
-    private Form createForm(TeamProjectDTO teamProjectDTO) {
+    private Form createForm(TeamProjectDTO teamProjectDTO, String teamId) {
         Form.FormBuilder<?, ?> builder = Form.builder();
         builder.fields(createField(teamProjectDTO));
         builder.title("Figma team projects");
-        builder.submit(createSubmit());
+        builder.submit(createSubmit(teamId));
         return builder.build();
     }
 
@@ -48,8 +47,8 @@ public class ProjectFormReplyCreator {
         return teamProjectDTO.getProjects().stream().map(p -> Option.builder().label(p.getName()).value(p.getId()).build()).collect(Collectors.toList());
     }
 
-    private Submit createSubmit() {
-        String replyPath = "/project-files";
+    private Submit createSubmit(String teamId) {
+        String replyPath = String.format("/%s/projects", teamId);
         Submit submit = new Submit();
         submit.setPath(replyPath);
         submit.setExpand(prepareExpand());
