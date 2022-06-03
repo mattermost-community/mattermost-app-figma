@@ -18,17 +18,15 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import static com.mattermost.integration.figma.constant.prefixes.global.GlobalPrefixes.*;
+import static com.mattermost.integration.figma.constant.prefixes.user.UserPrefixes.*;
+
 @Service
 @Slf4j
 public class UserDataKVServiceImpl implements UserDataKVService {
     private final KVService kvService;
     private final JsonUtils jsonUtils;
     private final DataEncryptionService dataEncryptionService;
-    private final static String ALL_USERS = "ALL_USERS";
-    private final static String USER_KV_PREFIX = "figma-user-id-";
-    private final static String FIGMA_TEAM_ID_PREFIX = "figma-team-id-";
-    private final static String ALL_TEAMS = "ALL_TEAMS";
-    private final static String MM_USER_ID_PREFIX = "mm-user-id-";
 
     public UserDataKVServiceImpl(KVService kvService, JsonUtils jsonUtils, DataEncryptionService dataEncryptionService) {
         this.kvService = kvService;

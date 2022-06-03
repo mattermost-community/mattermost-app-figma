@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.mattermost.integration.figma.constant.prefixes.user.UserPrefixes.MM_USER_ID_PREFIX;
+
 @Service
 public class SubscribeServiceImpl implements SubscribeService {
 
@@ -42,8 +44,6 @@ public class SubscribeServiceImpl implements SubscribeService {
 
     @Autowired
     private UserDataKVService userDataKVService;
-
-    private final static String MM_USER_ID_PREFIX = "mm-user-id-";
 
     @Override
     public void subscribeToFile(InputPayload payload) {
