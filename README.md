@@ -19,7 +19,7 @@ A Figma app for Mattermost.
 
 ### Usage
 
-1. Run command `/figma subscribe` for enabling notifications from figma project or file.
+1. Run command `/figma subscribe` for notifications from figma project or file.
    <br /> `Note`: For this you will need to provide a team id.
    <br />The only way for this it's copy it from Figma url
    https://www.figma.com/files/team/{team_id}/{team_name}
