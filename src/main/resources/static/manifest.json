@@ -14,12 +14,6 @@
   "requested_locations": [
     "/command"
   ],
-  "on_install": {
-    "path": "/install",
-    "expand": {
-      "acting_user_access_token": "all"
-    }
-  },
   "bindings": {
     "path": "/bindings",
     "expand": {
