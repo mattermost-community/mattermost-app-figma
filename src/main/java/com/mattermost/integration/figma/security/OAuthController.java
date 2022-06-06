@@ -1,11 +1,15 @@
 package com.mattermost.integration.figma.security;
 
+import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFigmaCredsNotSavedException;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
+import com.mattermost.integration.figma.input.oauth.OAuth2;
 import com.mattermost.integration.figma.security.dto.FigmaTokenDTO;
 import com.mattermost.integration.figma.security.service.OAuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Objects;
 
 @RestController
 @Slf4j
@@ -16,13 +20,20 @@ public class OAuthController {
 
     @PostMapping("/oauth2/connect")
     public String getOauthForm(@RequestBody InputPayload payload) {
-        System.out.println(payload);
+        log.debug(payload.toString());
+
+        if (!hasFigmaCredsStored(payload)) {
+            log.error("Figma credentials were not stored:"+ payload);
+            throw new MMFigmaCredsNotSavedException();
+        }
+
         String url = oAuthService.generateUrl(payload);
         return String.format("{\"type\":\"ok\",\"data\":\"%s\"}", url);
     }
 
     @PostMapping("/oauth2/complete")
     public String postOauthClientSecret(@RequestBody InputPayload payload) {
+        log.debug(payload.toString());
 
         FigmaTokenDTO figmaUserToken = oAuthService.getFigmaUserToken(payload);
 
@@ -33,6 +44,7 @@ public class OAuthController {
 
     @PostMapping("/configure")
     public String posOauthCreds(@RequestBody InputPayload payload) {
+        log.debug(payload.toString());
         oAuthService.storeOAuthCreds(payload);
         return "{\"text\":\"saved\"}";
     }
@@ -45,5 +57,19 @@ public class OAuthController {
         return String.format("{\"type\":\"ok\",\"text\":\"[Connect](%s) to Figma.\"}", url);
     }
 
+    private boolean hasFigmaCredsStored(InputPayload payload) {
+        OAuth2 oauth2 = payload.getContext().getOauth2();
+        if (Objects.isNull(oauth2)) {
+            return false;
+        }
+        if (oauth2.getClientId().isBlank()) {
+            return false;
+        }
+
+        if (oauth2.getCompleteUrl().isBlank()) {
+            return false;
+        }
+        return true;
+    }
 
 }

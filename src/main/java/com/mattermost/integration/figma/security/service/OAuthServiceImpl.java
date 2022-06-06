@@ -68,7 +68,7 @@ public class OAuthServiceImpl implements OAuthService {
 
         HttpEntity<OAuthCredsDTO> request = new HttpEntity<>(credsDTO, headers);
         log.info("Sending request to store OauthCreds for client with id: " + clientId);
-        ResponseEntity<String> resp = mmRestTemplate.postForEntity(String.format("%s%s", mmSiteUrlBase, STORE_CREDS_URL), request, String.class);
+        mmRestTemplate.postForEntity(String.format("%s%s", mmSiteUrlBase, STORE_CREDS_URL), request, String.class);
         log.info("Successfully stored creds");
     }
 
