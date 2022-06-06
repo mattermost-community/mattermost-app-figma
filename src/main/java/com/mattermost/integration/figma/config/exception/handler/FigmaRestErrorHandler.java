@@ -1,5 +1,6 @@
 package com.mattermost.integration.figma.config.exception.handler;
 
+import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaBadRequestException;
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaBasicTeamSubscriptionException;
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaResourceForbiddenException;
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaResourceNotFoundException;
@@ -29,7 +30,7 @@ public class FigmaRestErrorHandler implements ResponseErrorHandler {
         }
 
         if (response.getStatusCode() == HttpStatus.BAD_REQUEST) {
-            throw new FigmaBasicTeamSubscriptionException();
+            throw new FigmaBadRequestException();
         }
 
         if (response.getStatusCode() == HttpStatus.FORBIDDEN) {
