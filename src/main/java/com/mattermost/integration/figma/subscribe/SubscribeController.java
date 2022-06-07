@@ -19,13 +19,13 @@ import com.mattermost.integration.figma.input.oauth.OAuth2;
 import com.mattermost.integration.figma.input.oauth.User;
 import com.mattermost.integration.figma.subscribe.service.SubscribeService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -45,20 +45,20 @@ public class SubscribeController {
     private FigmaFileService figmaFileService;
 
     @PostMapping("/subscribe")
-    public FormType subscribeToFileComment(@RequestBody InputPayload request) {
-
+    public FormType subscribe(@RequestBody InputPayload request) {
+        log.debug(request.toString());
         if ("D".equalsIgnoreCase(request.getContext().getChannel().getType())) {
-            log.error("Subscription from DM channel:"+ request);
+            log.error("Subscription from DM channel:" + request);
             throw new MMSubscriptionFromDMChannelException();
         }
 
         if (!subscribeService.isBotExistsInChannel(request)) {
-            log.error("Figma bot wasn't added to channel:"+ request);
+            log.error("Figma bot wasn't added to channel:" + request);
             throw new MMSubscriptionInChannelWithoutBotException();
         }
 
         if (!isFigmaUserStored(request)) {
-            log.error("Figma user was not stored:"+ request);
+            log.error("Figma user was not stored:" + request);
             throw new MMFigmaUserNotSavedException();
         }
 
@@ -75,7 +75,7 @@ public class SubscribeController {
 
     @PostMapping("{teamId}/projects")
     public Object sendProjectFiles(@RequestBody InputPayload request, @PathVariable String teamId) {
-        System.out.println(request);
+        log.debug(request.toString());
         if (request.getValues().getIsProjectSubscription().equals("true")) {
             request.getValues().setTeamId(teamId);
             fileNotificationService.subscribeToFileNotification(request);
@@ -96,7 +96,7 @@ public class SubscribeController {
 
     @PostMapping("{teamId}/projects/file")
     public String sendProjectFile(@RequestBody InputPayload request, @PathVariable String teamId) {
-        System.out.println(request);
+        log.debug(request.toString());
         String fileKey = request.getValues().getFile().getValue();
         request.getValues().setTeamId(teamId);
         log.info("Get files: " + request.getValues().getFile().getValue() + " has come");
@@ -126,7 +126,7 @@ public class SubscribeController {
         }
 
         if (!isFigmaUserStored(request)) {
-            log.error("Figma user was not stored:"+ request);
+            log.error("Figma user was not stored:" + request);
             throw new MMFigmaUserNotSavedException();
         }
 
@@ -159,17 +159,17 @@ public class SubscribeController {
             return false;
         }
 
-        boolean hasBlankRefreshToken = oauth2User.getRefreshToken().isBlank();
+        boolean hasBlankRefreshToken = StringUtils.isBlank(oauth2User.getRefreshToken());
         if (hasBlankRefreshToken) {
             return false;
         }
 
-        boolean hasBlankClient = oauth2.getClientId().isBlank();
+        boolean hasBlankClient = StringUtils.isBlank(oauth2.getClientId());
         if (hasBlankClient) {
             return false;
         }
 
-        boolean hasBlankSecret = oauth2.getClientSecret().isBlank();
+        boolean hasBlankSecret = StringUtils.isBlank(oauth2.getClientSecret());
         if (hasBlankSecret) {
             return false;
         }

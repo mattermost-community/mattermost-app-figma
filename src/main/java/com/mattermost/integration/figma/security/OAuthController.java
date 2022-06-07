@@ -6,8 +6,11 @@ import com.mattermost.integration.figma.input.oauth.OAuth2;
 import com.mattermost.integration.figma.security.dto.FigmaTokenDTO;
 import com.mattermost.integration.figma.security.service.OAuthService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Objects;
 
@@ -62,11 +65,12 @@ public class OAuthController {
         if (Objects.isNull(oauth2)) {
             return false;
         }
-        if (oauth2.getClientId().isBlank()) {
+
+        if (StringUtils.isBlank(oauth2.getClientId())) {
             return false;
         }
 
-        if (oauth2.getCompleteUrl().isBlank()) {
+        if (StringUtils.isBlank(oauth2.getCompleteUrl())) {
             return false;
         }
         return true;
