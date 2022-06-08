@@ -27,12 +27,14 @@ public class WebhookController {
 
     @PostMapping("/comment")
     public void comment(@RequestBody FileCommentWebhookResponse response) {
-        System.out.println(response);
-        if (Objects.nonNull(response) && !response.getValues().getData().getEventType().equals("PING")) {
-            log.debug("Received webhook from figma: " + response);
-            fileCommentService.updateName(response);
-            fileNotificationService.sendFileNotificationMessageToMMSubscribedChannels(response);
-            fileNotificationService.sendFileNotificationMessageToMM(response);
+        if ("PING".equals(response.getValues().getData().getEventType())) {
+            log.debug(response.toString());
+            return;
         }
+        log.debug("Received webhook from figma: " + response);
+        fileCommentService.updateName(response);
+        fileNotificationService.sendFileNotificationMessageToMMSubscribedChannels(response);
+        fileNotificationService.sendFileNotificationMessageToMM(response);
     }
 }
+

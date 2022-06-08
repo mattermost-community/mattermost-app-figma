@@ -14,10 +14,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 @Service
-public class DataEncryptionServiceImpl implements DataEncryptionService{
+public class DataEncryptionServiceImpl implements DataEncryptionService {
 
     @Autowired
-     private SecretKeySpec secretKeySpec;
+    private SecretKeySpec secretKeySpec;
 
     @Override
     public String encrypt(String text) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {

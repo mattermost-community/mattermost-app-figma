@@ -43,8 +43,7 @@ public class OAuthServiceImpl implements OAuthService {
         String clientId = payload.getContext().getOauth2().getClientId();
         String redirect = payload.getContext().getOauth2().getCompleteUrl();
         String state = payload.getValues().getState();
-        String url = String.format("%s/oauth?client_id=%s&redirect_uri=%s&scope=file_read&state=%s&response_type=code", BASE_URL, clientId, redirect, state);
-        return url;
+        return String.format("%s/oauth?client_id=%s&redirect_uri=%s&scope=file_read&state=%s&response_type=code", BASE_URL, clientId, redirect, state);
     }
 
     @Override

@@ -17,7 +17,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
-@TestPropertySource(properties = {"encryption.key = mySecretKey"})
 class ReplyControllerTest {
 
     public static final String FILE_ID = "FILE_ID";

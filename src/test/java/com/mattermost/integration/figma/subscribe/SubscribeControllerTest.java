@@ -28,7 +28,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
-@TestPropertySource(properties = {"encryption.key = mySecretKey"})
 class SubscribeControllerTest {
 
     private static final String PUBLIC = "P";

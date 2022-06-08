@@ -20,7 +20,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
-@TestPropertySource(properties = {"encryption.key = mySecretKey"})
 class OAuthControllerTest {
 
     public static final String URL = "URL";
