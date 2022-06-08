@@ -14,9 +14,6 @@ public class InstallController {
     @Value("${app.root.url}")
     private String appRootUrl;
 
-    @Value("${server.port}")
-    private String port;
-
     @GetMapping("/manifest.json")
     public Manifest getManifest() {
         Expand.ExpandBuilder expandBindingsBuilder = Expand.builder();
@@ -47,7 +44,7 @@ public class InstallController {
         functionBuilder.runtime("java11");
 
         Http.HttpBuilder httpBuilder = Http.builder();
-        httpBuilder.rootUrl(String.format("%s:%s",appRootUrl,port));
+        httpBuilder.rootUrl(appRootUrl);
 
         AwsLambda.AwsLambdaBuilder awsLambdaBuilder = AwsLambda.builder();
         awsLambdaBuilder.functions(Collections.singletonList(functionBuilder.build()));
