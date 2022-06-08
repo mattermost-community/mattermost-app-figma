@@ -4,8 +4,8 @@ resource "aws_lambda_function" "mattermost_figma_lambda_function" {
   s3_bucket = "${var.figma_aws_lambda_bucket}"
   s3_key    = "${var.figma_aws_lambda_bucket_key}"
   handler          = "${var.lambda_function_handler}"
-  timeout = 60
-  memory_size = 256
+  timeout = 600
+  memory_size = 1024
   role             = "${aws_iam_role.iam_role_for_lambda.arn}"
   depends_on   = ["aws_s3_bucket_object.figma-jar","aws_cloudwatch_log_group.log_group"]
   environment {

@@ -11,6 +11,8 @@
 	<groupId>com.mattermost.integration</groupId>
 	<artifactId>figma</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
 	<name>figma</name>
 	<description>Matternost integration for Figma</description>
 	<properties>

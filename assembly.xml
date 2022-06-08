@@ -19,10 +19,6 @@
     </fileSets>
     <files>
         <file>
-            <source>src/main/resources/static/manifest.json</source>
-            <fileMode>0777</fileMode>
-        </file>
-        <file>
             <source>target/java-mm-figma-function.zip</source>
             <fileMode>0777</fileMode>
             <outputDirectory>/</outputDirectory>
