@@ -8,11 +8,15 @@ import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenRespo
 import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.security.service.OAuthService;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Objects;
@@ -20,12 +24,14 @@ import java.util.Optional;
 import java.util.Set;
 
 @Service
+@Slf4j
 public class FileOwnerServiceImpl implements FileOwnerService {
 
     private static final String FIGMA_FILE_URL = "https://api.figma.com/v1/files/%s";
     private static final String OWNER = "owner";
 
     private final UserDataKVService userDataKVService;
+    @Qualifier("figmaRestTemplate")
     private final RestTemplate restTemplate;
     private final JsonUtils jsonUtils;
     private final OAuthService oAuthService;
@@ -56,7 +62,7 @@ public class FileOwnerServiceImpl implements FileOwnerService {
         for (String userId : userIds) {
             Optional<UserDataDto> currentUserData = userDataKVService.getUserData(userId, mmSiteUrl, botAccessToken);
             if (currentUserData.isEmpty()) {
-                return null;
+                continue;
             }
             if (checkIfUserIsOwner(getToken(currentUserData.get()), fileKey)) {
                 return userId;
@@ -67,7 +73,10 @@ public class FileOwnerServiceImpl implements FileOwnerService {
 
     private boolean checkIfUserIsOwner(String figmaAccessToken, String fileKey) {
         FileOwnerResponseDto fileOwnerResponseDto = sendGetFileRequest(fileKey, figmaAccessToken);
-        return OWNER.equals(fileOwnerResponseDto.getRole());
+        if (fileOwnerResponseDto != null) {
+            return OWNER.equals(fileOwnerResponseDto.getRole());
+        }
+        return false;
     }
 
     private FileOwnerResponseDto sendGetFileRequest(String fileKey, String figmaAccessToken) {
@@ -76,9 +85,13 @@ public class FileOwnerServiceImpl implements FileOwnerService {
         headers.set("Authorization", String.format("Bearer %s", figmaAccessToken));
         HttpEntity<Object> request = new HttpEntity<>(headers);
 
-        ResponseEntity<String> resp = restTemplate.exchange(String.format(FIGMA_FILE_URL, fileKey), HttpMethod.GET, request, String.class);
-
-        return (FileOwnerResponseDto) jsonUtils.convertStringToObject(resp.getBody(), FileOwnerResponseDto.class).get();
+        try {
+            ResponseEntity<String> resp = restTemplate.exchange(String.format(FIGMA_FILE_URL, fileKey), HttpMethod.GET, request, String.class);
+            return (FileOwnerResponseDto) jsonUtils.convertStringToObject(resp.getBody(), FileOwnerResponseDto.class).get();
+        } catch (HttpClientErrorException e) {
+            log.error(e.getMessage());
+            return null;
+        }
     }
 
     private String getToken(UserDataDto userDataDto) {

@@ -191,15 +191,16 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         String botAccessToken = context.getBotAccessToken();
         String commenterTeamId = figmaWebhookService.getCurrentUserTeamId(figmaData.getWebhookId(),
                 mattermostSiteUrl, botAccessToken);
-        String commenterId = figmaData.getTriggeredBy().getId();
-        Optional<TeamProjectDTO> teamProjects = figmaProjectService.getProjectsByTeamId(commenterTeamId, commenterId, mattermostSiteUrl, botAccessToken);
+        String webhookOwnerId = kvService.get(WEBHOOK_ID_PREFIX.concat(figmaData.getWebhookId()), mattermostSiteUrl, botAccessToken);
+
+        Optional<TeamProjectDTO> teamProjects = figmaProjectService.getProjectsByTeamId(commenterTeamId, webhookOwnerId, mattermostSiteUrl, botAccessToken);
 
         if (teamProjects.isEmpty()) {
             return;
         }
 
         for (ProjectDTO projectDTO : teamProjects.get().getProjects()) {
-            Optional<FigmaProjectFilesDTO> filesDTO = figmaFileService.getProjectFiles(projectDTO.getId(), commenterId, mattermostSiteUrl, botAccessToken);
+            Optional<FigmaProjectFilesDTO> filesDTO = figmaFileService.getProjectFiles(projectDTO.getId(), webhookOwnerId, mattermostSiteUrl, botAccessToken);
             if (filesDTO.isEmpty()) {
                 continue;
             }

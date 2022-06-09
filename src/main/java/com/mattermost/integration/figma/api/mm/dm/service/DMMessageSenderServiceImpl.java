@@ -233,12 +233,17 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
         }
 
         StringBuilder stringBuilder = new StringBuilder();
+        int mmUserCount = 0;
         int mentionCounter = 0;
         for (Comment comment : comments) {
             if (Objects.nonNull(comment.getText())) {
                 stringBuilder.append(comment.getText());
             } else {
-                stringBuilder.append("@").append(mmUsers.get(mentionCounter++).getUsername());
+                if (mmUserCount + 1 == mmUsers.size()) {
+                    stringBuilder.append(mentions.get(mentionCounter++).getHandle());
+                } else {
+                    stringBuilder.append("@").append(mmUsers.get(mmUserCount++).getUsername());
+                }
             }
         }
 

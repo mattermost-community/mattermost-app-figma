@@ -51,6 +51,7 @@ public class CommentServiceImpl implements CommentService {
         headers.set("Authorization", String.format("Bearer %s", token));
 
         HttpEntity request = new HttpEntity(postCommentRequestDTO ,headers);
+        // TODO catch 500 error due to mmUser who is not in the team is trying to reply to comment in this team
         restTemplate.postForEntity(url, request, String.class);
     }
 }
