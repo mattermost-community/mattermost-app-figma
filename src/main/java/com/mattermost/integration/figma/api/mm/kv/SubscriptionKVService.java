@@ -35,4 +35,8 @@ public interface SubscriptionKVService {
     Set<String> getMMChannelIdsByProjectId(String projectId, String mattermostSiteUrl, String token);
 
     Optional<ProjectInfo> getProjectById(String projectId, String mattermostSiteUrl, String token);
+
+    void updateProjectName(String projectName, String projectId, String mattermostSiteUrl, String token);
+
+    void updateFileName(String fileName, String fileId, String mattermostSiteUrl, String token);
 }

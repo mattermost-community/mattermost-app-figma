@@ -1,5 +1,6 @@
 package com.mattermost.integration.figma.api.figma.file.service;
 
+import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFileDTO;
 import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFilesDTO;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
@@ -18,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 public class FigmaFileServiceImpl implements FigmaFileService {
 
     private static final String FILES_URL = "https://api.figma.com/v1/projects/%s/files";
+    private static final String GET_FILE_URL = "https://api.figma.com/v1/files/%s";
 
 
     @Autowired
@@ -61,4 +63,17 @@ public class FigmaFileServiceImpl implements FigmaFileService {
         return resp.getBody();
     }
 
+
+    @Override
+    public FigmaProjectFileDTO getFileByKey(String fileKey, String accessToken) {
+        String url = String.format(GET_FILE_URL, fileKey);
+
+        HttpHeaders headers = new HttpHeaders();
+
+        headers.set("Authorization", String.format("Bearer %s", accessToken));
+        HttpEntity<Object> request = new HttpEntity<>(headers);
+
+        ResponseEntity<FigmaProjectFileDTO> resp = restTemplate.exchange(url, HttpMethod.GET, request, FigmaProjectFileDTO.class);
+        return resp.getBody();
+    }
 }

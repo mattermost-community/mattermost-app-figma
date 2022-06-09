@@ -2,6 +2,9 @@ package com.mattermost.integration.figma.subscribe.service;
 
 import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFileDTO;
 import com.mattermost.integration.figma.api.figma.file.service.FigmaFileService;
+import com.mattermost.integration.figma.api.figma.project.dto.ProjectDTO;
+import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
+import com.mattermost.integration.figma.api.figma.project.service.FigmaProjectService;
 import com.mattermost.integration.figma.api.mm.dm.service.DMMessageSenderService;
 import com.mattermost.integration.figma.api.mm.kv.KVService;
 import com.mattermost.integration.figma.api.mm.kv.SubscriptionKVService;
@@ -14,9 +17,14 @@ import com.mattermost.integration.figma.input.mm.form.MMStaticSelectField;
 import com.mattermost.integration.figma.input.mm.user.MMChannelUser;
 import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
+import com.mattermost.integration.figma.security.dto.UserDataDto;
+import com.mattermost.integration.figma.security.service.OAuthService;
 import com.mattermost.integration.figma.subscribe.service.dto.FileData;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 import java.util.List;
 import java.util.Set;
@@ -25,6 +33,7 @@ import java.util.stream.Collectors;
 import static com.mattermost.integration.figma.constant.prefixes.user.UserPrefixes.MM_USER_ID_PREFIX;
 
 @Service
+@Slf4j
 public class SubscribeServiceImpl implements SubscribeService {
 
     @Autowired
@@ -44,6 +53,12 @@ public class SubscribeServiceImpl implements SubscribeService {
 
     @Autowired
     private UserDataKVService userDataKVService;
+
+    @Autowired
+    private FigmaProjectService figmaProjectService;
+
+    @Autowired
+    private OAuthService oAuthService;
 
     @Override
     public void subscribeToFile(InputPayload payload) {
@@ -68,12 +83,14 @@ public class SubscribeServiceImpl implements SubscribeService {
         String botAccessToken = payload.getContext().getBotAccessToken();
         Set<FileInfo> files = subscriptionKVService.getFilesByMMChannelId(mmChannelID, mattermostSiteUrl, botAccessToken);
         Set<ProjectInfo> projects = subscriptionKVService.getProjectsByMMChannelId(mmChannelID, mattermostSiteUrl, botAccessToken);
-        if (files.isEmpty() && projects.isEmpty()) {
-            dmMessageSenderService.sendMessage(payload, "You have no subscriptions in this channel");
-            return;
+        try {
+            updateProjects(projects, mattermostSiteUrl, botAccessToken);
+            updateFiles(files, mattermostSiteUrl, botAccessToken);
+        } catch (RestClientException e) {
+            log.error(e.getMessage());
+            sendProjectAndFileSubscriptionsToMM(payload, projects, files);
         }
-        files.forEach(f -> dmMessageSenderService.sendFileSubscriptionToMMChat(f, payload));
-        projects.forEach(project -> dmMessageSenderService.sendProjectSubscriptionsToMMChat(project, payload));
+        sendProjectAndFileSubscriptionsToMM(payload, projects, files);
     }
 
     @Override
@@ -165,5 +182,37 @@ public class SubscribeServiceImpl implements SubscribeService {
                 throw new MMSubscriptionToFileInSubscribedProjectException(projectInfo.getName());
             }
         }
+    }
+
+    private void updateProjects(Set<ProjectInfo> projects, String mmSiteUrl, String botAccessToken) {
+        for (ProjectInfo project : projects) {
+            List<ProjectDTO> figmaProjects = figmaProjectService.getProjectsByTeamId(project.getTeamId(),
+                    project.getFigmaUserId(), mmSiteUrl, botAccessToken).getProjects();
+            figmaProjects.stream().filter(projectDTO -> projectDTO.getId().equals(project.getProjectId()))
+                    .forEach(projectDTO -> {
+                        subscriptionKVService.updateProjectName(projectDTO.getName(),
+                            projectDTO.getId(), mmSiteUrl, botAccessToken);
+                        project.setName(projectDTO.getName());
+                    });
+        }
+    }
+
+    private void updateFiles(Set<FileInfo> files, String mmSiteUrl, String botAccessToken) {
+        for (FileInfo fileInfo : files) {
+            UserDataDto userDataDto = userDataKVService.getUserData(fileInfo.getFigmaUserId(), mmSiteUrl, botAccessToken);
+            String accessToken = oAuthService.refreshToken(userDataDto.getClientId(), userDataDto.getClientSecret(), userDataDto.getRefreshToken()).getAccessToken();
+            FigmaProjectFileDTO upToDateFile = figmaFileService.getFileByKey(fileInfo.getFileId(), accessToken);
+            subscriptionKVService.updateFileName(upToDateFile.getName(), upToDateFile.getKey(), mmSiteUrl, botAccessToken);
+            fileInfo.setFileName(upToDateFile.getName());
+        }
+    }
+
+    private void sendProjectAndFileSubscriptionsToMM(InputPayload payload, Set<ProjectInfo> projects, Set<FileInfo> files) {
+        if (files.isEmpty() && projects.isEmpty()) {
+            dmMessageSenderService.sendMessage(payload, "You have no subscriptions in this channel");
+            return;
+        }
+        files.forEach(f -> dmMessageSenderService.sendFileSubscriptionToMMChat(f, payload));
+        projects.forEach(project -> dmMessageSenderService.sendProjectSubscriptionsToMMChat(project, payload));
     }
 }
