@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -53,8 +54,11 @@ public class FileOwnerServiceImpl implements FileOwnerService {
 
     private String checkIfSetContainsFileOwnerId(Set<String> userIds, String mmSiteUrl, String botAccessToken, String fileKey) {
         for (String userId : userIds) {
-            UserDataDto currentUserData = userDataKVService.getUserData(userId, mmSiteUrl, botAccessToken);
-            if (checkIfUserIsOwner(getToken(currentUserData), fileKey)) {
+            Optional<UserDataDto> currentUserData = userDataKVService.getUserData(userId, mmSiteUrl, botAccessToken);
+            if (currentUserData.isEmpty()) {
+                return null;
+            }
+            if (checkIfUserIsOwner(getToken(currentUserData.get()), fileKey)) {
                 return userId;
             }
         }

@@ -28,7 +28,7 @@
                                 "location": "configure",
                                 "label": "configure",
                                 "form": {
-                                    "title": "Configures Google OAuth2 App credentials",
+                                    "title": "Configures Figma OAuth2 App credentials",
                                     "icon": "icon.png",
                                     "submit": {
                                         "path": "/configure",

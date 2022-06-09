@@ -1,9 +1,6 @@
 package com.mattermost.integration.figma.config.exception.handler;
 
-import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaBadRequestException;
-import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaBasicTeamSubscriptionException;
-import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaResourceForbiddenException;
-import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaResourceNotFoundException;
+import com.mattermost.integration.figma.config.exception.exceptions.figma.*;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.*;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -49,7 +46,9 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
             MMSubscriptionToFileInSubscribedProjectException.class,
             MMFigmaUserNotSavedException.class,
             MMFigmaCredsNotSavedException.class,
-            FigmaBasicTeamSubscriptionException.class
+            FigmaBasicTeamSubscriptionException.class,
+            FigmaNoFilesInProjectSubscriptionException.class,
+            FigmaNoProjectsInTeamSubscriptionException.class
     })
     @ResponseBody
     public String handleMMSubscriptionFromDMChannelException(

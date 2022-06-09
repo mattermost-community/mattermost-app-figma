@@ -6,6 +6,7 @@ import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.security.service.DataEncryptionService;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.BadPaddingException;
@@ -13,10 +14,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static com.mattermost.integration.figma.constant.prefixes.global.GlobalPrefixes.*;
 import static com.mattermost.integration.figma.constant.prefixes.user.UserPrefixes.*;
@@ -35,11 +33,17 @@ public class UserDataKVServiceImpl implements UserDataKVService {
     }
 
     @Override
-    public UserDataDto getUserData(String userId, String mmSiteUrl, String botAccessToken) {
-        UserDataDto currentUserData = (UserDataDto) jsonUtils.convertStringToObject(kvService.get(USER_KV_PREFIX.concat(userId), mmSiteUrl,
-                botAccessToken), UserDataDto.class).get();
+    public Optional<UserDataDto> getUserData(String userId, String mmSiteUrl, String botAccessToken) {
+        String userKVString = kvService.get(USER_KV_PREFIX.concat(userId), mmSiteUrl,
+                botAccessToken);
+
+        if (StringUtils.isBlank(userKVString)) {
+            return Optional.empty();
+        }
+
+        UserDataDto currentUserData = (UserDataDto) jsonUtils.convertStringToObject(userKVString, UserDataDto.class).get();
         if (Objects.isNull(currentUserData.getClientSecret()) || Objects.isNull(currentUserData.getRefreshToken())) {
-            return currentUserData;
+            return Optional.of(currentUserData);
         }
         try {
             currentUserData.setClientSecret(dataEncryptionService.decrypt(currentUserData.getClientSecret()));
@@ -47,7 +51,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
         } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
             log.error(e.getMessage());
         }
-        return currentUserData;
+        return Optional.of(currentUserData);
     }
 
     @Override
@@ -104,10 +108,10 @@ public class UserDataKVServiceImpl implements UserDataKVService {
         String botAccessToken = inputPayload.getContext().getBotAccessToken();
         String teamId = inputPayload.getValues().getTeamId();
 
-        UserDataDto currentData = getUserData(userId, mmSiteUrl, botAccessToken);
-        if (Objects.nonNull(currentData.getTeamIds()) && !currentData.getTeamIds().isEmpty()) {
-            currentData.getTeamIds().add(teamId);
-            storePrimaryUserData(inputPayload, currentData);
+        Optional<UserDataDto> currentData = getUserData(userId, mmSiteUrl, botAccessToken);
+        if (currentData.isPresent() && Objects.nonNull(currentData.get().getTeamIds()) && !currentData.get().getTeamIds().isEmpty()) {
+            currentData.get().getTeamIds().add(teamId);
+            storePrimaryUserData(inputPayload, currentData.get());
         } else {
             UserDataDto newUserData = new UserDataDto();
             newUserData.setTeamIds(new HashSet<>(Collections.singletonList(teamId)));
@@ -136,6 +140,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
 
     private Set<String> getSetFromKV(String key, String mmSiteUrl, String botAccessToken) {
         return (Set<String>) jsonUtils.convertStringToObject(kvService.get(key, mmSiteUrl,
-                botAccessToken), new TypeReference<Set<String>>(){}).orElse(null);
+                botAccessToken), new TypeReference<Set<String>>() {
+        }).orElse(null);
     }
 }

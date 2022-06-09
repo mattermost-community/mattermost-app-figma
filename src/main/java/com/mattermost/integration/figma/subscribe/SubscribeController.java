@@ -10,6 +10,8 @@ import com.mattermost.integration.figma.api.mm.dm.component.FigmaFilesFormReplyC
 import com.mattermost.integration.figma.api.mm.dm.component.ProjectFormReplyCreator;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
+import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaNoFilesInProjectSubscriptionException;
+import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaNoProjectsInTeamSubscriptionException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFigmaUserNotSavedException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionFromDMChannelException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionInChannelWithoutBotException;
@@ -67,6 +69,11 @@ public class SubscribeController {
         log.debug("Subscription to file comment request: " + request);
 
         TeamProjectDTO projects = figmaProjectService.getProjectsByTeamId(request);
+
+        if (projects.getProjects().isEmpty()) {
+            throw new FigmaNoProjectsInTeamSubscriptionException();
+        }
+
         String teamId = request.getValues().getTeamId();
         ProjectFormReplyCreator projectFormReplyCreator = new ProjectFormReplyCreator();
 
@@ -88,6 +95,10 @@ public class SubscribeController {
         log.debug("Get files for project request: " + request);
 
         FigmaProjectFilesDTO projectFiles = figmaFileService.getProjectFiles(request);
+
+        if (projectFiles.getFiles().isEmpty()) {
+            throw new FigmaNoFilesInProjectSubscriptionException();
+        }
 
         FigmaFilesFormReplyCreator figmaFilesFormReplyCreator = new FigmaFilesFormReplyCreator();
 

@@ -9,10 +9,12 @@ import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.UserDataDto;
 
+import java.util.Optional;
+
 public interface DMMessageSenderService {
     String sendMessageToCommentAuthor(FigmaWebhookResponse figmaWebhookResponse, Context context, String fileOwnerId);
 
-    void sendMessageToSpecificReceiver(Context context, UserDataDto specificUserData,
+    void sendMessageToSpecificReceiver(Context context, Optional<UserDataDto> specificUserData,
                                        FigmaWebhookResponse figmaWebhookResponse, String notificationMessageRoot);
 
     String sendMessageToFileOwner(FigmaWebhookResponse figmaWebhookResponse, Context context);

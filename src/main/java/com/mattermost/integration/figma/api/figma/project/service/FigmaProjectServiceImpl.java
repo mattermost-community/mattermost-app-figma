@@ -18,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Optional;
+
 @Service
 public class FigmaProjectServiceImpl implements FigmaProjectService {
 
@@ -38,7 +40,7 @@ public class FigmaProjectServiceImpl implements FigmaProjectService {
 
 
     @Override
-    public TeamProjectDTO getProjectsByTeamId(FileCommentWebhookResponse response) {
+    public Optional<TeamProjectDTO> getProjectsByTeamId(FileCommentWebhookResponse response) {
         FigmaWebhookResponse figmaData = response.getValues().getData();
         String botAccessToken = response.getContext().getBotAccessToken();
 
@@ -63,11 +65,16 @@ public class FigmaProjectServiceImpl implements FigmaProjectService {
     }
 
     @Override
-    public TeamProjectDTO getProjectsByTeamId(String teamId, String figmaUserId, String mmSiteUrl, String botAccessToken) {
-        UserDataDto userData = userDataKVService.getUserData(figmaUserId, mmSiteUrl, botAccessToken);
+    public Optional<TeamProjectDTO> getProjectsByTeamId(String teamId, String figmaUserId, String mmSiteUrl, String botAccessToken) {
+        Optional<UserDataDto> userDataOptional = userDataKVService.getUserData(figmaUserId, mmSiteUrl, botAccessToken);
+
+        if (userDataOptional.isEmpty()) {
+            return Optional.empty();
+        }
+        UserDataDto userData = userDataOptional.get();
         String accessToken = oAuthService.refreshToken(userData.getClientId(), userData.getClientSecret(),
                 userData.getRefreshToken()).getAccessToken();
-        return sendGetProjectRequest(teamId, accessToken);
+        return Optional.of(sendGetProjectRequest(teamId, accessToken));
     }
 
     private TeamProjectDTO sendGetProjectRequest(String teamId, String accessToken) {

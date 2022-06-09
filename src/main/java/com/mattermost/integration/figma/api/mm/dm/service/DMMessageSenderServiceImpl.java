@@ -17,12 +17,14 @@ import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
 import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.security.service.OAuthService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.apache.logging.log4j.util.Strings.isBlank;
@@ -58,6 +60,9 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
 
     public String sendMessageToCommentAuthor(FigmaWebhookResponse figmaWebhookResponse, Context context, String fileOwnerId) {
         String token = getToken(figmaWebhookResponse, context);
+        if (StringUtils.isBlank(token)) {
+            return token;
+        }
         CommentDto comment = commentService.getCommentById(figmaWebhookResponse.getParentId(),
                 figmaWebhookResponse.getFileKey(), token).get();
         if (figmaWebhookResponse.getTriggeredBy().getId().equals(comment.getUser().getId())) {
@@ -65,8 +70,13 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
         }
 
         if (!fileOwnerId.equals(comment.getUser().getId())) {
-            UserDataDto currentUserData = userDataKVService.getUserData(comment.getUser().getId(),
+            Optional<UserDataDto> currentUserData = userDataKVService.getUserData(comment.getUser().getId(),
                     context.getMattermostSiteUrl(), context.getBotAccessToken());
+
+            if (currentUserData.isEmpty()) {
+                return StringUtils.EMPTY;
+            }
+
             sendMessageToSpecificReceiver(context, currentUserData, figmaWebhookResponse, REPLY_NOTIFICATION_ROOT);
             return comment.getUser().getId();
         }
@@ -78,7 +88,7 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
                 figmaWebhookResponse.getWebhookId(), figmaWebhookResponse.getTriggeredBy().getId(),
                 context.getMattermostSiteUrl(), context.getBotAccessToken());
         if (!figmaWebhookResponse.getTriggeredBy().getId().equals(fileOwnerId)) {
-            UserDataDto fileOwnerData = userDataKVService.getUserData(fileOwnerId, context.getMattermostSiteUrl(), context.getBotAccessToken());
+            Optional<UserDataDto> fileOwnerData = userDataKVService.getUserData(fileOwnerId, context.getMattermostSiteUrl(), context.getBotAccessToken());
             sendMessageToSpecificReceiver(context, fileOwnerData, figmaWebhookResponse, COMMENTED_IN_YOUR_FILE);
             return fileOwnerId;
         }
@@ -119,10 +129,14 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
 
     @Override
     public void sendMessageToSubscribedChannel(String channelId, FileCommentWebhookResponse webhookResponse) {
-        DMMessageWithPropsFields messageWithPropsFields = getMessageWithPropsFields(webhookResponse.getContext(), webhookResponse.getValues().getData(),
+        Optional<DMMessageWithPropsFields> messageWithPropsFields = getMessageWithPropsFields(webhookResponse.getContext(), webhookResponse.getValues().getData(),
                 channelId, COMMENTED_IN_FILE);
 
-        DMMessageWithPropsPayload dmMessageWithPropsPayload = formMessageCreator.createDMMessageWithPropsPayload(messageWithPropsFields, webhookResponse.getContext().getBotAccessToken(),
+        if (messageWithPropsFields.isEmpty()) {
+            return;
+        }
+
+        DMMessageWithPropsPayload dmMessageWithPropsPayload = formMessageCreator.createDMMessageWithPropsPayload(messageWithPropsFields.get(), webhookResponse.getContext().getBotAccessToken(),
                 webhookResponse.getContext().getMattermostSiteUrl());
 
         messageService.sendDMMessage(dmMessageWithPropsPayload);
@@ -130,7 +144,7 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
     }
 
     @Override
-    public void sendMessage(InputPayload payload , String message) {
+    public void sendMessage(InputPayload payload, String message) {
         Context context = payload.getContext();
         DMMessagePayload messagePayload = new DMMessagePayload();
         messagePayload.setChannelId(context.getChannel().getId());
@@ -140,60 +154,79 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
         messageService.sendDMMessage(messagePayload);
     }
 
-    public void sendMessageToSpecificReceiver(Context context, UserDataDto specificUserData,
+    public void sendMessageToSpecificReceiver(Context context, Optional<UserDataDto> specificUserData,
                                               FigmaWebhookResponse figmaWebhookResponse, String notificationMessageRoot) {
+        if (specificUserData.isEmpty()) {
+            return;
+        }
+
         context.setActingUser(new ActingUser());
-        context.getActingUser().setId(specificUserData.getMmUserId());
+        context.getActingUser().setId(specificUserData.get().getMmUserId());
         String channelId = messageService.createDMChannel(createDMChannelPayload(context));
 
-        DMMessageWithPropsFields messageWithPropsFields = getMessageWithPropsFields(context, figmaWebhookResponse,
+        Optional<DMMessageWithPropsFields> messageWithPropsFields = getMessageWithPropsFields(context, figmaWebhookResponse,
                 channelId, notificationMessageRoot);
-        messageService.sendDMMessage(formMessageCreator.createDMMessageWithPropsPayload(messageWithPropsFields, context.getBotAccessToken(),
+        if (messageWithPropsFields.isEmpty()) {
+            return;
+        }
+        messageService.sendDMMessage(formMessageCreator.createDMMessageWithPropsPayload(messageWithPropsFields.get(), context.getBotAccessToken(),
                 context.getMattermostSiteUrl()));
     }
 
     private String getToken(FigmaWebhookResponse figmaWebhookResponse, Context context) {
         String mmSiteUrl = context.getMattermostSiteUrl();
         String botAccessToken = context.getBotAccessToken();
-        UserDataDto userDataDto = userDataKVService.getUserData(figmaWebhookResponse.getTriggeredBy().getId(),
+        Optional<UserDataDto> userDataDto = userDataKVService.getUserData(figmaWebhookResponse.getTriggeredBy().getId(),
                 mmSiteUrl, botAccessToken);
+
+        if (userDataDto.isEmpty()) {
+            return StringUtils.EMPTY;
+        }
+
         FigmaOAuthRefreshTokenResponseDTO figmaOAuthRefreshTokenResponseDTO =
-                oAuthService.refreshToken(userDataDto.getClientId(), userDataDto.getClientSecret(), userDataDto.getRefreshToken());
+                oAuthService.refreshToken(userDataDto.get().getClientId(), userDataDto.get().getClientSecret(), userDataDto.get().getRefreshToken());
         return figmaOAuthRefreshTokenResponseDTO.getAccessToken();
     }
 
-    private DMMessageWithPropsFields getMessageWithPropsFields(Context context, FigmaWebhookResponse figmaWebhookResponse,
-                                                               String channelId, String notificationMessageRoot) {
+    private Optional<DMMessageWithPropsFields> getMessageWithPropsFields(Context context, FigmaWebhookResponse figmaWebhookResponse,
+                                                                         String channelId, String notificationMessageRoot) {
         String mmSiteUrl = context.getMattermostSiteUrl();
         String botAccessToken = context.getBotAccessToken();
 
-        UserDataDto userDataDto = userDataKVService.getUserData(figmaWebhookResponse.getTriggeredBy().getId(), mmSiteUrl, botAccessToken);
-        MMUser mmUsers = mmUserService.getUserById(userDataDto.getMmUserId(), mmSiteUrl, botAccessToken);
+        Optional<UserDataDto> userDataDto = userDataKVService.getUserData(figmaWebhookResponse.getTriggeredBy().getId(), mmSiteUrl, botAccessToken);
+
+        String userName;
+        if (userDataDto.isEmpty()) {
+            userName = figmaWebhookResponse.getTriggeredBy().getHandle();
+        } else {
+            MMUser mmUsers = mmUserService.getUserById(userDataDto.get().getMmUserId(), mmSiteUrl, botAccessToken);
+            userName = String.format("@%s", mmUsers.getUsername());
+        }
 
         DMMessageWithPropsFields msg = new DMMessageWithPropsFields();
         msg.setAppId(context.getAppId());
-        msg.setLabel(buildLabel(mmUsers.getUsername(), figmaWebhookResponse.getFileName(),
+        msg.setLabel(buildLabel(userName, figmaWebhookResponse.getFileName(),
                 figmaWebhookResponse.getFileKey(), notificationMessageRoot));
         msg.setChannelId(channelId);
         msg.setDescription(buildComment(figmaWebhookResponse.getComment(),
                 figmaWebhookResponse.getMentions(), mmSiteUrl, botAccessToken));
         msg.setReplyFileId(figmaWebhookResponse.getFileKey());
         msg.setReplyCommentId(isBlank(figmaWebhookResponse.getParentId()) ? figmaWebhookResponse.getCommentId() : figmaWebhookResponse.getParentId());
-        return msg;
+        return Optional.of(msg);
     }
 
     private String buildLabel(String author, String fileName, String fileKey, String root) {
         if (fileName.isBlank()) {
             fileName = UNTITLED;
         }
-        return String.format("@%s %s [%s](%s):", author, root, fileName, String.format(FILE_URL, fileKey));
+        return String.format("%s %s [%s](%s):", author, root, fileName, String.format(FILE_URL, fileKey));
     }
 
     private String buildComment(List<Comment> comments, List<Mention> mentions, String mmSiteUrl,
                                 String botToken) {
-        List<UserDataDto> userData = mentions.stream().map(mention ->
+        List<Optional<UserDataDto>> userData = mentions.stream().map(mention ->
                 userDataKVService.getUserData(mention.getId(), mmSiteUrl, botToken)).collect(Collectors.toList());
-        List<String> userIds = userData.stream().map(UserDataDto::getMmUserId).collect(Collectors.toList());
+        List<String> userIds = userData.stream().filter(Optional::isPresent).map(u -> u.get().getMmUserId()).collect(Collectors.toList());
         List<MMUser> mmUsers = new ArrayList<>();
         if (!userIds.isEmpty()) {
             mmUsers = getMMUsersByIds(userIds, mmSiteUrl, botToken);

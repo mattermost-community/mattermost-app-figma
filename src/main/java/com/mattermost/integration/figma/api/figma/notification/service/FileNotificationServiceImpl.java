@@ -1,6 +1,7 @@
 package com.mattermost.integration.figma.api.figma.notification.service;
 
 import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFileDTO;
+import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFilesDTO;
 import com.mattermost.integration.figma.api.figma.file.service.FigmaFileService;
 import com.mattermost.integration.figma.api.figma.project.dto.ProjectDTO;
 import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
@@ -21,6 +22,7 @@ import com.mattermost.integration.figma.security.service.OAuthService;
 import com.mattermost.integration.figma.subscribe.service.SubscribeService;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
@@ -113,6 +115,11 @@ public class FileNotificationServiceImpl implements FileNotificationService {
 
         if (!isBlank(figmaWebhookResponse.getParentId())) {
             String authorId = dmMessageSenderService.sendMessageToCommentAuthor(figmaWebhookResponse, context, fileOwnerId);
+
+            if (StringUtils.isBlank(authorId)) {
+                return;
+            }
+
             figmaWebhookResponse.getMentions().removeIf(mention -> mention.getId().equals(authorId));
         }
         if (!figmaWebhookResponse.getMentions().isEmpty()) {
@@ -134,7 +141,11 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         String teamWebhookId = kvService.get(TEAM_WEBHOOK_PREFIX.concat(teamId), mmSiteUrl, botAccessToken);
         if (Objects.nonNull(teamWebhookId) && !teamWebhookId.isBlank()) {
             String webhookOwnerId = kvService.get(WEBHOOK_ID_PREFIX.concat(teamWebhookId), mmSiteUrl, botAccessToken);
-            UserDataDto webhookOwner = userDataKVService.getUserData(webhookOwnerId, mmSiteUrl, botAccessToken);
+            Optional<UserDataDto> webhookOwnerOptional = userDataKVService.getUserData(webhookOwnerId, mmSiteUrl, botAccessToken);
+            if (webhookOwnerOptional.isEmpty()) {
+                return;
+            }
+            UserDataDto webhookOwner = webhookOwnerOptional.get();
             FigmaOAuthRefreshTokenResponseDTO figmaOAuthRefreshTokenResponseDTO = oAuthService.refreshToken(webhookOwner.getClientId(), webhookOwner.getClientSecret(), webhookOwner.getRefreshToken());
             figmaWebhookService.getTeamWebhooks(teamId, figmaOAuthRefreshTokenResponseDTO.getAccessToken())
                     .getWebhooks().stream().filter(webhook -> webhook.getEventType().equals(FILE_COMMENT_EVENT_TYPE))
@@ -181,10 +192,18 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         String commenterTeamId = figmaWebhookService.getCurrentUserTeamId(figmaData.getWebhookId(),
                 mattermostSiteUrl, botAccessToken);
         String commenterId = figmaData.getTriggeredBy().getId();
-        TeamProjectDTO teamProjects = figmaProjectService.getProjectsByTeamId(commenterTeamId, commenterId, mattermostSiteUrl, botAccessToken);
+        Optional<TeamProjectDTO> teamProjects = figmaProjectService.getProjectsByTeamId(commenterTeamId, commenterId, mattermostSiteUrl, botAccessToken);
 
-        for (ProjectDTO projectDTO : teamProjects.getProjects()) {
-            List<FigmaProjectFileDTO> projectFiles = figmaFileService.getProjectFiles(projectDTO.getId(), commenterId, mattermostSiteUrl, botAccessToken).getFiles();
+        if (teamProjects.isEmpty()) {
+            return;
+        }
+
+        for (ProjectDTO projectDTO : teamProjects.get().getProjects()) {
+            Optional<FigmaProjectFilesDTO> filesDTO = figmaFileService.getProjectFiles(projectDTO.getId(), commenterId, mattermostSiteUrl, botAccessToken);
+            if (filesDTO.isEmpty()) {
+                continue;
+            }
+            List<FigmaProjectFileDTO> projectFiles = filesDTO.get().getFiles();
             Optional<FigmaProjectFileDTO> triggeredFile = projectFiles.stream().filter(file -> file.getKey().equals(figmaData.getFileKey())).findFirst();
             if (triggeredFile.isPresent()) {
                 Set<String> channelIds = subscribeService.getMMChannelIdsByProjectId(context, projectDTO.getId());

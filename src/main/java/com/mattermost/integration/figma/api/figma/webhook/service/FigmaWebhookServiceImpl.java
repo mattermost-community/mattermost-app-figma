@@ -80,7 +80,7 @@ public class FigmaWebhookServiceImpl implements FigmaWebhookService {
     @Override
     public String getCurrentUserTeamId(String webhookId, String mmSiteUrl, String botAccessToken) {
         String webhookOwnerId = kvService.get(WEBHOOK_ID_PREFIX.concat(webhookId), mmSiteUrl, botAccessToken);
-        String accessToken = getToken(userDataKVService.getUserData(webhookOwnerId, mmSiteUrl, botAccessToken));
+        String accessToken = getToken(userDataKVService.getUserData(webhookOwnerId, mmSiteUrl, botAccessToken).get());
         return getWebhookById(webhookId, accessToken).getTeamId();
     }
 

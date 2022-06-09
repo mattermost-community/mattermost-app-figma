@@ -15,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Optional;
+
 @Service
 public class FigmaFileServiceImpl implements FigmaFileService {
 
@@ -45,10 +47,13 @@ public class FigmaFileServiceImpl implements FigmaFileService {
     }
 
     @Override
-    public FigmaProjectFilesDTO getProjectFiles(String projectId, String figmaUserId, String mmSiteUrl, String botAccessToken) {
-        UserDataDto userData = userDataKVService.getUserData(figmaUserId, mmSiteUrl, botAccessToken);
-        String accessToken = oAuthService.refreshToken(userData.getClientId(), userData.getClientSecret(), userData.getRefreshToken()).getAccessToken();
-        return sendGetProjectFilesRequest(projectId, accessToken);
+    public Optional<FigmaProjectFilesDTO> getProjectFiles(String projectId, String figmaUserId, String mmSiteUrl, String botAccessToken) {
+        Optional<UserDataDto> userData = userDataKVService.getUserData(figmaUserId, mmSiteUrl, botAccessToken);
+        if (userData.isEmpty()) {
+            return Optional.empty();
+        }
+        String accessToken = oAuthService.refreshToken(userData.get().getClientId(), userData.get().getClientSecret(), userData.get().getRefreshToken()).getAccessToken();
+        return Optional.of(sendGetProjectFilesRequest(projectId, accessToken));
     }
 
     private FigmaProjectFilesDTO sendGetProjectFilesRequest(String projectId, String accessToken) {

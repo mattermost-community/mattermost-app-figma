@@ -1,8 +1,10 @@
 package com.mattermost.integration.figma.subscribe;
 
+import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFileDTO;
 import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFilesDTO;
 import com.mattermost.integration.figma.api.figma.file.service.FigmaFileService;
 import com.mattermost.integration.figma.api.figma.notification.service.FileNotificationService;
+import com.mattermost.integration.figma.api.figma.project.dto.ProjectDTO;
 import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
 import com.mattermost.integration.figma.api.figma.project.service.FigmaProjectService;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
@@ -77,6 +79,10 @@ class SubscribeControllerTest {
     private MMStaticSelectField file;
     @Mock
     private FileInfo fileInfo;
+    @Mock
+    private ProjectDTO projectDTO;
+    @Mock
+    private FigmaProjectFileDTO figmaProjectFileDTO;
 
     @BeforeEach
     void setUp() {
@@ -97,6 +103,7 @@ class SubscribeControllerTest {
         when(channel.getType()).thenReturn(PUBLIC);
         when(subscribeService.isBotExistsInChannel(inputPayload)).thenReturn(true);
         when(figmaProjectService.getProjectsByTeamId(inputPayload)).thenReturn(teamProjectDTO);
+        when(teamProjectDTO.getProjects()).thenReturn(Collections.singletonList(projectDTO));
         when(values.getTeamId()).thenReturn(TEAM_ID);
 
         FormType subscribe = testedInstance.subscribe(inputPayload);
@@ -142,6 +149,7 @@ class SubscribeControllerTest {
         when(figmaFileService.getProjectFiles(inputPayload)).thenReturn(figmaProjectFilesDTO);
         when(values.getProject()).thenReturn(field);
         when(field.getValue()).thenReturn(VALUE);
+        when(figmaProjectFilesDTO.getFiles()).thenReturn(Collections.singletonList(figmaProjectFileDTO));
 
         FormType formType = (FormType) testedInstance.sendProjectFiles(inputPayload, TEAM_ID);
 
@@ -188,14 +196,14 @@ class SubscribeControllerTest {
     public void shouldThrowMMSubscriptionInChannelWithoutBotException() {
         when(subscribeService.isBotExistsInChannel(inputPayload)).thenReturn(false);
 
-        assertThrows(MMSubscriptionInChannelWithoutBotException.class, () ->  testedInstance.sendChannelSubscriptions(inputPayload));
+        assertThrows(MMSubscriptionInChannelWithoutBotException.class, () -> testedInstance.sendChannelSubscriptions(inputPayload));
     }
 
     @Test
     public void shouldThrowMMFigmaUserNotSavedExceptionForListOfSubscriptions() {
         when(subscribeService.isBotExistsInChannel(inputPayload)).thenReturn(true);
 
-        assertThrows(MMFigmaUserNotSavedException.class, () ->  testedInstance.sendChannelSubscriptions(inputPayload));
+        assertThrows(MMFigmaUserNotSavedException.class, () -> testedInstance.sendChannelSubscriptions(inputPayload));
     }
 
 }

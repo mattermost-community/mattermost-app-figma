@@ -37,10 +37,15 @@ public class FileCommentServiceImpl implements FileCommentService {
 
     private void updateProjectName(FileCommentWebhookResponse response, String mmSiteUrl, String botAccessToken, String fileKey) {
         String commenterId = response.getValues().getData().getTriggeredBy().getId();
-        TeamProjectDTO projects = figmaProjectService.getProjectsByTeamId(response);
+        Optional<TeamProjectDTO> projects = figmaProjectService.getProjectsByTeamId(response);
+
+        if (projects.isEmpty()) {
+            return;
+        }
+
         Optional<ProjectDTO> project = Optional.empty();
-        for (ProjectDTO p : projects.getProjects()) {
-            List<FigmaProjectFileDTO> projectFiles = figmaFileService.getProjectFiles(p.getId(), commenterId, mmSiteUrl, botAccessToken).getFiles();
+        for (ProjectDTO p : projects.get().getProjects()) {
+            List<FigmaProjectFileDTO> projectFiles = figmaFileService.getProjectFiles(p.getId(), commenterId, mmSiteUrl, botAccessToken).get().getFiles();
             Optional<FigmaProjectFileDTO> fileDTO = projectFiles.stream().filter(pr -> fileKey.equals(pr.getKey())).findAny();
             if (fileDTO.isPresent()) {
                 project = Optional.of(p);
