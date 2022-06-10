@@ -21,10 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.logging.log4j.util.Strings.isBlank;
@@ -233,21 +230,28 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
         }
 
         StringBuilder stringBuilder = new StringBuilder();
-        int mmUserCount = 0;
         int mentionCounter = 0;
         for (Comment comment : comments) {
             if (Objects.nonNull(comment.getText())) {
                 stringBuilder.append(comment.getText());
             } else {
-                if (mmUserCount + 1 == mmUsers.size()) {
-                    stringBuilder.append(mentions.get(mentionCounter++).getHandle());
-                } else {
-                    stringBuilder.append("@").append(mmUsers.get(mmUserCount++).getUsername());
-                }
+                stringBuilder.append(prepareSingleMention(mentions.get(mentionCounter++), mmUsers, mmSiteUrl, botToken));
             }
         }
 
         return stringBuilder.toString();
+    }
+    private String prepareSingleMention(Mention currentMention, List<MMUser> mmUsers, String mmSiteUrl, String token) {
+        Optional<UserDataDto> userData = userDataKVService.getUserData(currentMention.getId(), mmSiteUrl, token);
+        if (userData.isPresent()) {
+            UserDataDto userDataDto = userData.get();
+            Optional<MMUser> mentionedMMUser = mmUsers.stream().filter(mmUser -> mmUser.getId().equals(userDataDto.getMmUserId())).findFirst();
+            if (mentionedMMUser.isPresent()) {
+                return "@".concat(mentionedMMUser.get().getUsername());
+            }
+        }
+
+        return currentMention.getHandle();
     }
 
     private List<MMUser> getMMUsersByIds(List<String> ids, String mmSiteUrl, String botAccessToken) {
