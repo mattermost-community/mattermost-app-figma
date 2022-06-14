@@ -48,7 +48,8 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
             MMFigmaCredsNotSavedException.class,
             FigmaBasicTeamSubscriptionException.class,
             FigmaNoFilesInProjectSubscriptionException.class,
-            FigmaNoProjectsInTeamSubscriptionException.class
+            FigmaNoProjectsInTeamSubscriptionException.class,
+            FigmaReplyErrorException.class
     })
     @ResponseBody
     public String handleMMSubscriptionFromDMChannelException(
