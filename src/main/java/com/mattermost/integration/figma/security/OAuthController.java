@@ -26,7 +26,7 @@ public class OAuthController {
         log.debug(payload.toString());
 
         if (!hasFigmaCredsStored(payload)) {
-            log.error("Figma credentials were not stored:"+ payload);
+            log.error("Figma credentials were not stored:" + payload);
             throw new MMFigmaCredsNotSavedException();
         }
 
@@ -41,6 +41,7 @@ public class OAuthController {
         FigmaTokenDTO figmaUserToken = oAuthService.getFigmaUserToken(payload);
 
         oAuthService.storeFigmaUserToken(payload, figmaUserToken);
+        oAuthService.storeUserDataIntoKV(payload, figmaUserToken);
 
         return "{\"text\":\"completed\"}";
     }
@@ -58,6 +59,15 @@ public class OAuthController {
         String url = oAuthService.getConnectUrl(payload);
 
         return String.format("{\"type\":\"ok\",\"text\":\"[Connect](%s) to Figma.\"}", url);
+    }
+
+    @PostMapping("/disconnect")
+    public String disconnect(@RequestBody InputPayload payload) {
+        log.debug("Disconnect request payload: " + payload);
+
+        oAuthService.storeFigmaUserToken(payload, null);
+
+        return "{\"type\":\"ok\",\"text\":\"Disconnected your Figma account .\"}";
     }
 
     private boolean hasFigmaCredsStored(InputPayload payload) {

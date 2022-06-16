@@ -97,11 +97,14 @@ public class OAuthServiceImpl implements OAuthService {
         log.info("Sending request to store figmaUserToken for client with id: " + payload.getContext().getOauth2()
                 .getClientId());
         mmRestTemplate.postForEntity(url, request, String.class);
+        log.info("Successfully stored token");
+    }
+
+    public void storeUserDataIntoKV(InputPayload payload, FigmaTokenDTO tokenDTO) {
         payload.getContext().getOauth2().setUser(new User(null, 0, tokenDTO.getRefreshToken(), tokenDTO.getUserId()));
         userDataKVService.storePrimaryUserData(payload, new UserDataDto());
         userDataKVService.saveNewUserToAllUserIdsSet(tokenDTO.getUserId(), payload.getContext().getMattermostSiteUrl(),
                 payload.getContext().getBotAccessToken());
-        log.info("Successfully stored token");
     }
 
     @Override

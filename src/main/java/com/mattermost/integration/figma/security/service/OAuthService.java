@@ -12,6 +12,8 @@ public interface OAuthService {
 
     void storeOAuthCreds(InputPayload payload);
 
+    void storeUserDataIntoKV(InputPayload payload, FigmaTokenDTO tokenDTO);
+
     FigmaTokenDTO getFigmaUserToken(InputPayload payload);
 
     void storeFigmaUserToken(InputPayload payload, FigmaTokenDTO tokenDTO);
