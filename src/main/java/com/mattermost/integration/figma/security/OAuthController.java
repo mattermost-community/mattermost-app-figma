@@ -65,7 +65,8 @@ public class OAuthController {
     public String disconnect(@RequestBody InputPayload payload) {
         log.debug("Disconnect request payload: " + payload);
 
-        oAuthService.storeFigmaUserToken(payload, null);
+        FigmaTokenDTO figmaTokenDTO = new FigmaTokenDTO();
+        oAuthService.storeFigmaUserToken(payload, figmaTokenDTO);
 
         return "{\"type\":\"ok\",\"text\":\"Disconnected your Figma account .\"}";
     }

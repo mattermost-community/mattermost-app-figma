@@ -31,7 +31,9 @@
                 "path": "/disconnect",
                 "expand": {
                   "app": "all",
-                  "oauth2_app": "all"
+                  "oauth2_app": "all",
+                  "oauth2_user": "all",
+                  "acting_user_access_token": "all"
                 }
               }
             },
