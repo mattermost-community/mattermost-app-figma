@@ -119,6 +119,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
         }
     }
 
+    @Override
     public void storePrimaryUserData(InputPayload inputPayload, UserDataDto currentData) {
         String userId = inputPayload.getContext().getOauth2().getUser().getUserId();
         String mmSiteUrl = inputPayload.getContext().getMattermostSiteUrl();
@@ -133,9 +134,26 @@ public class UserDataKVServiceImpl implements UserDataKVService {
         }
 
         currentData.setMmUserId(inputPayload.getContext().getActingUser().getId());
+        currentData.setConnected(true);
 
         kvService.put(USER_KV_PREFIX.concat(userId), currentData, mmSiteUrl, botAccessToken);
         kvService.put(MM_USER_ID_PREFIX.concat(inputPayload.getContext().getActingUser().getId()), userId, mmSiteUrl, botAccessToken);
+    }
+
+    @Override
+    public void changeUserConnectionStatus(String mmUserId, boolean isConnected, String mmSiteUrl, String botAccessToken) {
+        String figmaUserId = getFigmaUserIdByMMUserId(mmUserId, mmSiteUrl, botAccessToken);
+        Optional<UserDataDto> userData = getUserData(figmaUserId, mmSiteUrl, botAccessToken);
+        userData.ifPresent(userDataDto -> {
+                    userDataDto.setConnected(isConnected);
+                    kvService.put(USER_KV_PREFIX.concat(figmaUserId), userDataDto, mmSiteUrl, botAccessToken);
+                }
+        );
+    }
+
+    @Override
+    public String getFigmaUserIdByMMUserId(String mmUserId, String mmSiteUrl, String botAccessToken) {
+        return kvService.get(MM_USER_ID_PREFIX.concat(mmUserId), mmSiteUrl, botAccessToken);
     }
 
     private Set<String> getSetFromKV(String key, String mmSiteUrl, String botAccessToken) {

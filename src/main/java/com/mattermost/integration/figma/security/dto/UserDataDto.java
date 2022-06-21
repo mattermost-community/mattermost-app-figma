@@ -11,4 +11,5 @@ public class UserDataDto {
     private String refreshToken;
     private String clientSecret;
     private String clientId;
+    private boolean isConnected;
 }

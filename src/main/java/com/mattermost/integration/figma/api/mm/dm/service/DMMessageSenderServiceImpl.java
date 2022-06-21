@@ -74,8 +74,10 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
                 return StringUtils.EMPTY;
             }
 
-            sendMessageToSpecificReceiver(context, currentUserData, figmaWebhookResponse, REPLY_NOTIFICATION_ROOT);
-            return comment.getUser().getId();
+            if (currentUserData.get().isConnected()) {
+                sendMessageToSpecificReceiver(context, currentUserData.get(), figmaWebhookResponse, REPLY_NOTIFICATION_ROOT);
+                return comment.getUser().getId();
+            }
         }
         return fileOwnerId;
     }
@@ -86,7 +88,9 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
                 context.getMattermostSiteUrl(), context.getBotAccessToken());
         if (!figmaWebhookResponse.getTriggeredBy().getId().equals(fileOwnerId)) {
             Optional<UserDataDto> fileOwnerData = userDataKVService.getUserData(fileOwnerId, context.getMattermostSiteUrl(), context.getBotAccessToken());
-            sendMessageToSpecificReceiver(context, fileOwnerData, figmaWebhookResponse, COMMENTED_IN_YOUR_FILE);
+            if (fileOwnerData.get().isConnected()) {
+                sendMessageToSpecificReceiver(context, fileOwnerData.get(), figmaWebhookResponse, COMMENTED_IN_YOUR_FILE);
+            }
             return fileOwnerId;
         }
         return FILE_OWNER_ID_MATCHED_COMMENTER_ID;
@@ -151,14 +155,12 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
         messageService.sendDMMessage(messagePayload);
     }
 
-    public void sendMessageToSpecificReceiver(Context context, Optional<UserDataDto> specificUserData,
+    @Override
+    public void sendMessageToSpecificReceiver(Context context, UserDataDto specificUserData,
                                               FigmaWebhookResponse figmaWebhookResponse, String notificationMessageRoot) {
-        if (specificUserData.isEmpty()) {
-            return;
-        }
 
         context.setActingUser(new ActingUser());
-        context.getActingUser().setId(specificUserData.get().getMmUserId());
+        context.getActingUser().setId(specificUserData.getMmUserId());
         String channelId = messageService.createDMChannel(createDMChannelPayload(context));
 
         Optional<DMMessageWithPropsFields> messageWithPropsFields = getMessageWithPropsFields(context, figmaWebhookResponse,

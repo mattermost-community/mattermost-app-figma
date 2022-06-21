@@ -1,6 +1,8 @@
 package com.mattermost.integration.figma.security;
 
+import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFigmaCredsNotSavedException;
+import com.mattermost.integration.figma.input.oauth.ActingUser;
 import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.input.oauth.OAuth2;
@@ -16,8 +18,7 @@ import org.springframework.test.context.TestPropertySource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 class OAuthControllerTest {
@@ -40,6 +41,8 @@ class OAuthControllerTest {
     private OAuth2 oAuth2;
     @Mock
     private FigmaTokenDTO figmaTokenDTO;
+    @Mock
+    private UserDataKVService userDataKVService;
 
     @BeforeEach
     void setUp() {
@@ -81,10 +84,19 @@ class OAuthControllerTest {
 
     @Test
     void shouldStoreFigmaUserToken() {
+        String testString = "1";
+        ActingUser actingUser = new ActingUser();
+        actingUser.setId(testString);
+
+        when(context.getActingUser()).thenReturn(actingUser);
+        when(context.getMattermostSiteUrl()).thenReturn(testString);
+        when(context.getBotAccessToken()).thenReturn(testString);
         when(oAuthService.getFigmaUserToken(inputPayload)).thenReturn(figmaTokenDTO);
+        doNothing().when(userDataKVService).changeUserConnectionStatus(testString, true, testString, testString);
 
         testedInstance.postOauthClientSecret(inputPayload);
 
         verify(oAuthService).storeFigmaUserToken(inputPayload, figmaTokenDTO);
+        verify(userDataKVService).changeUserConnectionStatus(testString, true, testString, testString);
     }
 }

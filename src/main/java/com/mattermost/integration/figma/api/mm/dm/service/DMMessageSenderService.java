@@ -14,7 +14,7 @@ import java.util.Optional;
 public interface DMMessageSenderService {
     String sendMessageToCommentAuthor(FigmaWebhookResponse figmaWebhookResponse, Context context, String fileOwnerId);
 
-    void sendMessageToSpecificReceiver(Context context, Optional<UserDataDto> specificUserData,
+    void sendMessageToSpecificReceiver(Context context, UserDataDto specificUserData,
                                        FigmaWebhookResponse figmaWebhookResponse, String notificationMessageRoot);
 
     String sendMessageToFileOwner(FigmaWebhookResponse figmaWebhookResponse, Context context);

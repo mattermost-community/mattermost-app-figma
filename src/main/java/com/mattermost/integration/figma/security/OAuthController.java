@@ -1,5 +1,6 @@
 package com.mattermost.integration.figma.security;
 
+import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFigmaCredsNotSavedException;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.input.oauth.OAuth2;
@@ -20,6 +21,9 @@ public class OAuthController {
 
     @Autowired
     private OAuthService oAuthService;
+
+    @Autowired
+    private UserDataKVService userDataKVService;
 
     @PostMapping("/oauth2/connect")
     public String getOauthForm(@RequestBody InputPayload payload) {
@@ -42,6 +46,8 @@ public class OAuthController {
 
         oAuthService.storeFigmaUserToken(payload, figmaUserToken);
         oAuthService.storeUserDataIntoKV(payload, figmaUserToken);
+        userDataKVService.changeUserConnectionStatus(payload.getContext().getActingUser().getId(), true,
+                payload.getContext().getMattermostSiteUrl(), payload.getContext().getBotAccessToken());
 
         return "{\"text\":\"completed\"}";
     }
@@ -67,6 +73,8 @@ public class OAuthController {
 
         FigmaTokenDTO figmaTokenDTO = new FigmaTokenDTO();
         oAuthService.storeFigmaUserToken(payload, figmaTokenDTO);
+        userDataKVService.changeUserConnectionStatus(payload.getContext().getActingUser().getId(), false,
+                payload.getContext().getMattermostSiteUrl(), payload.getContext().getBotAccessToken());
 
         return "{\"type\":\"ok\",\"text\":\"Disconnected your Figma account .\"}";
     }

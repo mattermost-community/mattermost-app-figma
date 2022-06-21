@@ -24,4 +24,8 @@ public interface UserDataKVService {
     void saveUserToCertainTeam(String teamId, String userId, String mmSiteUrl, String botAccessToken);
 
     void saveNewTeamToAllTeamIdsSet(String teamId, String mmSiteUrl, String botAccessToken);
+
+    void changeUserConnectionStatus(String mmUserId, boolean isConnected, String mmSiteUrl, String botAccessToken);
+
+    String getFigmaUserIdByMMUserId(String mmUserId, String mmSiteUrl, String botAccessToken);
 }
