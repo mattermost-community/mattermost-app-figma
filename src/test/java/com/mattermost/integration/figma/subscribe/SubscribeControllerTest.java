@@ -9,6 +9,7 @@ import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
 import com.mattermost.integration.figma.api.figma.project.service.FigmaProjectService;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
+import com.mattermost.integration.figma.api.mm.user.MMUserService;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFigmaUserNotSavedException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionFromDMChannelException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionInChannelWithoutBotException;
@@ -26,6 +27,7 @@ import org.springframework.test.context.TestPropertySource;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -56,6 +58,9 @@ class SubscribeControllerTest {
     private FigmaProjectService figmaProjectService;
     @Mock
     private FigmaFileService figmaFileService;
+
+    @Mock
+    private MMUserService userService;
 
     @Mock
     private InputPayload inputPayload;
@@ -119,11 +124,20 @@ class SubscribeControllerTest {
     }
 
     @Test
-    public void shouldThrowMMSubscriptionInChannelWithoutBotExceptionWhenBotNotInChannel() {
+    public void shouldAddBotWhenBotNotInChannel() {
         when(channel.getType()).thenReturn(PUBLIC);
         when(subscribeService.isBotExistsInChannel(inputPayload)).thenReturn(false);
 
-        assertThrows(MMSubscriptionInChannelWithoutBotException.class, () -> testedInstance.subscribe(inputPayload));
+        when(user.getRefreshToken()).thenReturn(REFRESH_TOKEN);
+        when(oAuth2.getClientId()).thenReturn(CLIENT_ID);
+        when(oAuth2.getClientSecret()).thenReturn(CLIENT_SECRET);
+        when(figmaProjectService.getProjectsByTeamId(inputPayload)).thenReturn(teamProjectDTO);
+        when(teamProjectDTO.getProjects()).thenReturn(Collections.singletonList(projectDTO));
+        when(values.getTeamId()).thenReturn(TEAM_ID);
+
+        testedInstance.subscribe(inputPayload);
+
+        verify(userService).addUserToChannel(any(),any(),any(),any());
     }
 
     @Test

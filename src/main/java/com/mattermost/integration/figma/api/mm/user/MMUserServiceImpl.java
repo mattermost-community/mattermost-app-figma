@@ -1,10 +1,12 @@
 package com.mattermost.integration.figma.api.mm.user;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.mattermost.integration.figma.input.mm.user.MMChannelUser;
 import com.mattermost.integration.figma.input.mm.user.MMUser;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -22,6 +24,7 @@ public class MMUserServiceImpl implements MMUserService {
     private static final String USERS_GET_URL_BY_CHANNEL_ID = "%s/api/v4/channels/%s/members";
 
     @Autowired
+    @Qualifier("mmRestTemplate")
     private RestTemplate restTemplate;
 
     @Autowired
@@ -55,5 +58,16 @@ public class MMUserServiceImpl implements MMUserService {
 
         return restTemplate.exchange(url, HttpMethod.GET, request, new ParameterizedTypeReference<List<MMChannelUser>>() {
         }).getBody();
+    }
+
+    @Override
+    public void addUserToChannel(String channelId, String userId, String mattermostSiteUrl, String token) {
+        String url = String.format(USERS_GET_URL_BY_CHANNEL_ID, mattermostSiteUrl, channelId);
+        HttpHeaders headers = new HttpHeaders();
+
+        headers.set("Authorization", String.format("Bearer %s", token));
+        HttpEntity<Object> request = new HttpEntity<>(String.format("{\"user_id\":\"%s\"}", userId), headers);
+
+        restTemplate.postForEntity(url, request, String.class);
     }
 }

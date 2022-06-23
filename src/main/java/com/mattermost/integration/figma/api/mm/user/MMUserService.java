@@ -9,4 +9,5 @@ public interface MMUserService {
     List<MMUser> getUsersById(List<String> ids, String mattermostSiteUrl, String token);
     MMUser getUserById(String id, String mattermostSiteUrl, String token);
     List<MMChannelUser> getUsersByChannelId(String channelId, String mattermostSiteUrl, String token);
+    void addUserToChannel(String channelId , String userId, String mattermostSiteUrl, String token);
 }

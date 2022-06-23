@@ -10,6 +10,7 @@ import com.mattermost.integration.figma.api.mm.dm.component.FigmaFilesFormReplyC
 import com.mattermost.integration.figma.api.mm.dm.component.ProjectFormReplyCreator;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
+import com.mattermost.integration.figma.api.mm.user.MMUserService;
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaNoFilesInProjectSubscriptionException;
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaNoProjectsInTeamSubscriptionException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFigmaUserNotSavedException;
@@ -45,6 +46,8 @@ public class SubscribeController {
     private FigmaProjectService figmaProjectService;
     @Autowired
     private FigmaFileService figmaFileService;
+    @Autowired
+    private MMUserService mmUserService;
 
     @PostMapping("/subscribe")
     public FormType subscribe(@RequestBody InputPayload request) {
@@ -55,8 +58,12 @@ public class SubscribeController {
         }
 
         if (!subscribeService.isBotExistsInChannel(request)) {
-            log.error("Figma bot wasn't added to channel:" + request);
-            throw new MMSubscriptionInChannelWithoutBotException();
+            log.info("Add Figma bot to channel:" + request);
+            String channelId = request.getContext().getChannel().getId();
+            String actingUserAccessToken = request.getContext().getActingUserAccessToken();
+            String botUserId = request.getContext().getBotUserId();
+            String mattermostSiteUrl = request.getContext().getMattermostSiteUrl();
+            mmUserService.addUserToChannel(channelId, botUserId, mattermostSiteUrl, actingUserAccessToken);
         }
 
         if (!isFigmaUserStored(request)) {
