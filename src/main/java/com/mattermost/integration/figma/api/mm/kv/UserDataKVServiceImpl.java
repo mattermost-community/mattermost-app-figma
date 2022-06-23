@@ -45,12 +45,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
         if (Objects.isNull(currentUserData.getClientSecret()) || Objects.isNull(currentUserData.getRefreshToken())) {
             return Optional.of(currentUserData);
         }
-        try {
-            currentUserData.setClientSecret(dataEncryptionService.decrypt(currentUserData.getClientSecret()));
-            currentUserData.setRefreshToken(dataEncryptionService.decrypt(currentUserData.getRefreshToken()));
-        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
-            log.error(e.getMessage());
-        }
+        decryptSensitiveUserData(currentUserData);
         return Optional.of(currentUserData);
     }
 
@@ -126,12 +121,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
         String botAccessToken = inputPayload.getContext().getBotAccessToken();
 
         currentData.setClientId(inputPayload.getContext().getOauth2().getClientId());
-        try {
-            currentData.setClientSecret(dataEncryptionService.encrypt(inputPayload.getContext().getOauth2().getClientSecret()));
-            currentData.setRefreshToken(dataEncryptionService.encrypt(inputPayload.getContext().getOauth2().getUser().getRefreshToken()));
-        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
-            log.error(e.getMessage());
-        }
+        encryptSensitiveUserData(currentData);
 
         currentData.setMmUserId(inputPayload.getContext().getActingUser().getId());
         currentData.setConnected(true);
@@ -144,11 +134,32 @@ public class UserDataKVServiceImpl implements UserDataKVService {
     public void changeUserConnectionStatus(String mmUserId, boolean isConnected, String mmSiteUrl, String botAccessToken) {
         String figmaUserId = getFigmaUserIdByMMUserId(mmUserId, mmSiteUrl, botAccessToken);
         Optional<UserDataDto> userData = getUserData(figmaUserId, mmSiteUrl, botAccessToken);
-        userData.ifPresent(userDataDto -> {
-                    userDataDto.setConnected(isConnected);
-                    kvService.put(USER_KV_PREFIX.concat(figmaUserId), userDataDto, mmSiteUrl, botAccessToken);
-                }
-        );
+        userData.ifPresent(currentData ->
+                changeUserStatusEncryptDataAndSave(currentData, figmaUserId, isConnected, mmSiteUrl, botAccessToken));
+    }
+
+    private void changeUserStatusEncryptDataAndSave(UserDataDto userDataDto, String figmaUserId, boolean isConnected, String mmSiteUrl, String botAccessToken) {
+        encryptSensitiveUserData(userDataDto);
+        userDataDto.setConnected(isConnected);
+        kvService.put(USER_KV_PREFIX.concat(figmaUserId), userDataDto, mmSiteUrl, botAccessToken);
+    }
+
+    private void encryptSensitiveUserData(UserDataDto userDataDto) {
+        try {
+            userDataDto.setClientSecret(dataEncryptionService.encrypt(userDataDto.getClientSecret()));
+            userDataDto.setRefreshToken(dataEncryptionService.encrypt(userDataDto.getRefreshToken()));
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void decryptSensitiveUserData(UserDataDto userDataDto) {
+        try {
+            userDataDto.setClientSecret(dataEncryptionService.decrypt(userDataDto.getClientSecret()));
+            userDataDto.setRefreshToken(dataEncryptionService.decrypt(userDataDto.getRefreshToken()));
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+            log.error(e.getMessage());
+        }
     }
 
     @Override
