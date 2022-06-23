@@ -85,7 +85,7 @@ public class SubscribeController {
         log.debug(request.toString());
         if (request.getValues().getIsProjectSubscription().equals("true")) {
             request.getValues().setTeamId(teamId);
-            fileNotificationService.subscribeToFileNotification(request);
+            fileNotificationService.createTeamWebhook(request);
             userDataKVService.saveUserData(request);
             subscribeService.subscribeToProject(request);
             return "{\"text\":\"Subscribed\"}";
@@ -120,7 +120,7 @@ public class SubscribeController {
             return String.format("{\"text\":\"This channel is already subscribed to updates about %s\"}", file.get().getFileName());
         }
 
-        fileNotificationService.subscribeToFileNotification(request);
+        fileNotificationService.createTeamWebhook(request);
         userDataKVService.saveUserData(request);
         subscribeService.subscribeToFile(request);
         return "{\"text\":\"Subscribed\"}";

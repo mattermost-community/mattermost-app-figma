@@ -49,10 +49,11 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
             FigmaBasicTeamSubscriptionException.class,
             FigmaNoFilesInProjectSubscriptionException.class,
             FigmaNoProjectsInTeamSubscriptionException.class,
-            FigmaReplyErrorException.class
+            FigmaReplyErrorException.class,
+            FigmaCannotCreateWebhookException.class
     })
     @ResponseBody
-    public String handleMMSubscriptionFromDMChannelException(
+    public String handleExceptions(
             RuntimeException ex, WebRequest request) {
         return String.format("{\"type\":\"error\",\"text\":\"%s\"}", ex.getMessage());
     }

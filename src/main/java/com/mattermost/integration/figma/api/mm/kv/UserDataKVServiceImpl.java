@@ -121,8 +121,13 @@ public class UserDataKVServiceImpl implements UserDataKVService {
         String botAccessToken = inputPayload.getContext().getBotAccessToken();
 
         currentData.setClientId(inputPayload.getContext().getOauth2().getClientId());
-        encryptSensitiveUserData(currentData);
 
+        try {
+            currentData.setClientSecret(dataEncryptionService.encrypt(inputPayload.getContext().getOauth2().getClientSecret()));
+            currentData.setRefreshToken(dataEncryptionService.encrypt(inputPayload.getContext().getOauth2().getUser().getRefreshToken()));
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+            log.error(e.getMessage());
+        }
         currentData.setMmUserId(inputPayload.getContext().getActingUser().getId());
         currentData.setConnected(true);
 
