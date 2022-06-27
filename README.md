@@ -9,13 +9,14 @@ A Figma app for Mattermost.
 2. Install/Enable Apps plugin  https://github.com/mattermost/mattermost-plugin-apps
 3. Register a figma app - https://www.figma.com/developers/api#register-oauth2
    * as a callback url use - http://MM_INSTANCE__ROOT_URL/plugins/com.mattermost.apps/apps/figma/oauth2/remote/complete
+   * Copy the client secret for a future step
 4. Run Figma integration server app
    * Run `docker-compose up` in the root of the Figma App repository
 5. In mattermost channel run `/apps install http http://localhost:8080/manifest.json`
 
 #### Link MM account with Figma
 
-1. Run command `/figma configure` and provide client id and client secret from figma app https://www.figma.com/developers/apps
+1. Run command `/figma configure` and provide client id and client secret from register a figma app step https://www.figma.com/developers/apps
 2. Run command `/figma connect` and open link from bot response for linking mm with figma account 
 
 ### Usage
