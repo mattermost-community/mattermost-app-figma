@@ -196,6 +196,7 @@ class SubscribeControllerTest {
 
     @Test
     public void shouldInvokeSendSubscriptionFilesToMMChannel() {
+        when(subscribeService.isBotExistsInTeam(inputPayload)).thenReturn(true);
         when(subscribeService.isBotExistsInChannel(inputPayload)).thenReturn(true);
         when(user.getRefreshToken()).thenReturn(REFRESH_TOKEN);
         when(oAuth2.getClientId()).thenReturn(CLIENT_ID);
@@ -208,13 +209,22 @@ class SubscribeControllerTest {
 
     @Test
     public void shouldThrowMMSubscriptionInChannelWithoutBotException() {
+        when(subscribeService.isBotExistsInTeam(inputPayload)).thenReturn(true);
         when(subscribeService.isBotExistsInChannel(inputPayload)).thenReturn(false);
 
         assertThrows(MMSubscriptionInChannelWithoutBotException.class, () -> testedInstance.sendChannelSubscriptions(inputPayload));
     }
 
     @Test
+    public void shouldThrowMMSubscriptionInTeamWithoutBotException() {
+        when(subscribeService.isBotExistsInTeam(inputPayload)).thenReturn(false);
+
+        assertThrows(MMSubscriptionInChannelWithoutBotException.class, () -> testedInstance.sendChannelSubscriptions(inputPayload));
+    }
+
+    @Test
     public void shouldThrowMMFigmaUserNotSavedExceptionForListOfSubscriptions() {
+        when(subscribeService.isBotExistsInTeam(inputPayload)).thenReturn(true);
         when(subscribeService.isBotExistsInChannel(inputPayload)).thenReturn(true);
 
         assertThrows(MMFigmaUserNotSavedException.class, () -> testedInstance.sendChannelSubscriptions(inputPayload));

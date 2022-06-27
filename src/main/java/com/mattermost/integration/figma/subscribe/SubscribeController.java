@@ -57,6 +57,16 @@ public class SubscribeController {
             throw new MMSubscriptionFromDMChannelException();
         }
 
+        if (!subscribeService.isBotExistsInTeam(request)) {
+            log.info("Add Figma bot to team:" + request);
+            String teamId = request.getContext().getChannel().getTeamId();
+            String actingUserAccessToken = request.getContext().getActingUserAccessToken();
+            String botUserId = request.getContext().getBotUserId();
+            String mattermostSiteUrl = request.getContext().getMattermostSiteUrl();
+            mmUserService.addUserToTeam(teamId, botUserId, mattermostSiteUrl, actingUserAccessToken);
+
+        }
+
         if (!subscribeService.isBotExistsInChannel(request)) {
             log.info("Add Figma bot to channel:" + request);
             String channelId = request.getContext().getChannel().getId();
@@ -139,8 +149,13 @@ public class SubscribeController {
         log.info("Get Subscriptions for channel: " + request.getContext().getChannel().getId() + " has come");
         log.debug("Get files request: " + request);
 
+
+        if (!subscribeService.isBotExistsInTeam(request)) {
+            throw new MMSubscriptionInChannelWithoutBotException("Please add Figma bot to this team");
+        }
+
         if (!subscribeService.isBotExistsInChannel(request)) {
-            throw new MMSubscriptionInChannelWithoutBotException();
+            throw new MMSubscriptionInChannelWithoutBotException("Please add Figma bot to this channel");
         }
 
         if (!isFigmaUserStored(request)) {

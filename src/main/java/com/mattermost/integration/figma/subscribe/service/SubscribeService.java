@@ -19,6 +19,8 @@ public interface SubscribeService {
 
     boolean isBotExistsInChannel(InputPayload payload);
 
+    boolean isBotExistsInTeam(InputPayload payload);
+
     Set<String> getMMChannelIdsByProjectId(Context context, String projectId);
 
     void unsubscribeFromProject(InputPayload payload, String projectId);

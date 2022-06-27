@@ -16,6 +16,7 @@ import com.mattermost.integration.figma.api.mm.user.MMUserService;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionToFileInSubscribedProjectException;
 import com.mattermost.integration.figma.input.mm.form.MMStaticSelectField;
 import com.mattermost.integration.figma.input.mm.user.MMChannelUser;
+import com.mattermost.integration.figma.input.mm.user.MMTeamUser;
 import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.UserDataDto;
@@ -128,6 +129,18 @@ public class SubscribeServiceImpl implements SubscribeService {
         List<MMChannelUser> usersInChannel = mmUserService.getUsersByChannelId(channelId, mattermostSiteUrl, userAccessToken);
 
         return usersInChannel.stream().anyMatch(u -> botUserId.equals(u.getUserId()));
+    }
+
+    @Override
+    public boolean isBotExistsInTeam(InputPayload payload) {
+        String userAccessToken = payload.getContext().getActingUserAccessToken();
+        String teamId = payload.getContext().getChannel().getTeamId();
+        String mattermostSiteUrl = payload.getContext().getMattermostSiteUrl();
+        String botUserId = payload.getContext().getBotUserId();
+
+        List<MMTeamUser> usersInTeam = mmUserService.getUsersByTeamId(teamId, mattermostSiteUrl, userAccessToken);
+
+        return usersInTeam.stream().anyMatch(u -> botUserId.equals(u.getUserID()));
     }
 
     public void subscribeToProject(InputPayload payload) {
