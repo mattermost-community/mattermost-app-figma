@@ -49,7 +49,7 @@ public class OAuthController {
         userDataKVService.changeUserConnectionStatus(payload.getContext().getActingUser().getId(), true,
                 payload.getContext().getMattermostSiteUrl(), payload.getContext().getBotAccessToken());
 
-        return "{\"text\":\"completed\"}";
+        return "{\"type\":\"ok\",\"text\":\"You have successfully connected your Figma account. Type in /figma to get started .\"}";
     }
 
     @PostMapping("/configure")

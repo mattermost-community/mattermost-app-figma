@@ -38,6 +38,8 @@ public class Manifest {
     private Http http;
     @JsonProperty("aws_lambda")
     private AwsLambda awsLambda;
+    @JsonProperty("remote_webhook_auth_type")
+    private String webhookAuthType;
     @JsonProperty("assets")
     private List<Object> assets;
 }

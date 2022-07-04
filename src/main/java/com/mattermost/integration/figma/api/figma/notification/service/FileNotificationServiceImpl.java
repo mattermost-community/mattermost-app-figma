@@ -48,7 +48,7 @@ public class FileNotificationServiceImpl implements FileNotificationService {
     private static final String BASE_WEBHOOK_URL = "https://api.figma.com/v2/webhooks";
     private static final String PASSCODE = "Mattermost";
     private static final String FILE_COMMENT_EVENT_TYPE = "FILE_COMMENT";
-    private static final String REDIRECT_URL = "%s%s?secret=%s";
+    private static final String REDIRECT_URL = "%s%s";
     private static final String FILE_COMMENT_URL = "/webhook/comment";
     private static final String MENTIONED_NOTIFICATION_ROOT = "commented on";
     private static final String WEBHOOK_ID_PREFIX = "figma-webhook-id-";
@@ -189,8 +189,7 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         fileCommentNotificationRequest.setPasscode(PASSCODE);
         fileCommentNotificationRequest.setEndpoint(String.format(
                 inputPayload.getContext().getMattermostSiteUrl().concat(REDIRECT_URL),
-                inputPayload.getContext().getAppPath(), FILE_COMMENT_URL,
-                inputPayload.getContext().getApp().getWebhookSecret()));
+                inputPayload.getContext().getAppPath(), FILE_COMMENT_URL));
 
         return new HttpEntity<>(fileCommentNotificationRequest, headers);
     }

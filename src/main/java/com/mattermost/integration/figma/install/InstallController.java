@@ -64,6 +64,7 @@ public class InstallController {
         manifestBuilder.onOauth2Complete(onOauth2CompleteBuilder.build());
         manifestBuilder.awsLambda(awsLambdaBuilder.build());
         manifestBuilder.http(httpBuilder.build());
+        manifestBuilder.webhookAuthType("none");
 
 
         return manifestBuilder.build();
