@@ -76,7 +76,7 @@ public class OAuthController {
         userDataKVService.changeUserConnectionStatus(payload.getContext().getActingUser().getId(), false,
                 payload.getContext().getMattermostSiteUrl(), payload.getContext().getBotAccessToken());
 
-        return "{\"type\":\"ok\",\"text\":\"Disconnected your Figma account .\"}";
+        return "{\"type\":\"ok\",\"text\":\"You have successfully disconnected your account from Figma\"}";
     }
 
     private boolean hasFigmaCredsStored(InputPayload payload) {

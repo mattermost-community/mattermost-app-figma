@@ -79,7 +79,7 @@ public class BindingsProvider {
 
     private Form createSubscribeForm() {
         Form subscribeForm = new Form();
-        subscribeForm.setTitle("Sends notification when figma file was commented");
+        subscribeForm.setTitle("Figma notifications");
         subscribeForm.setIcon(ICON);
         subscribeForm.setSubmit(createSubscribeSubmit());
         subscribeForm.setFields(Collections.singletonList(createSingleField("team_id")));
@@ -120,7 +120,7 @@ public class BindingsProvider {
     private Form createConfigureForm() {
         Form configureForm = new Form();
         configureForm.setIcon(ICON);
-        configureForm.setTitle("Configures Figma OAuth2 App credentials");
+        configureForm.setTitle("Connect Figma to Mattermost");
 
         Submit submit = new Submit();
         submit.setPath("/".concat(CONFIGURE.getTitle()));

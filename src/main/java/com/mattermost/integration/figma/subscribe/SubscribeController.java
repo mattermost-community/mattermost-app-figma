@@ -6,7 +6,6 @@ import com.mattermost.integration.figma.api.figma.file.service.FigmaFileService;
 import com.mattermost.integration.figma.api.figma.notification.service.FileNotificationService;
 import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
 import com.mattermost.integration.figma.api.figma.project.service.FigmaProjectService;
-import com.mattermost.integration.figma.api.mm.dm.component.FigmaFilesFormReplyCreator;
 import com.mattermost.integration.figma.api.mm.dm.component.ProjectFormReplyCreator;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
@@ -17,6 +16,7 @@ import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFigmaUs
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionFromDMChannelException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionInChannelWithoutBotException;
 import com.mattermost.integration.figma.input.mm.form.FormType;
+import com.mattermost.integration.figma.input.mm.form.MMStaticSelectField;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.input.oauth.OAuth2;
 import com.mattermost.integration.figma.input.oauth.User;
@@ -48,6 +48,8 @@ public class SubscribeController {
     private FigmaFileService figmaFileService;
     @Autowired
     private MMUserService mmUserService;
+
+    private String ALL_FILES = "all_files";
 
     @PostMapping("/subscribe")
     public FormType subscribe(@RequestBody InputPayload request) {
@@ -100,30 +102,38 @@ public class SubscribeController {
     @PostMapping("{teamId}/projects")
     public Object sendProjectFiles(@RequestBody InputPayload request, @PathVariable String teamId) {
         log.debug(request.toString());
-        if (request.getValues().getIsProjectSubscription().equals("true")) {
+        if (ALL_FILES.equals(request.getValues().getFile().getValue())) {
             request.getValues().setTeamId(teamId);
             fileNotificationService.createTeamWebhook(request);
             userDataKVService.saveUserData(request);
             subscribeService.subscribeToProject(request);
-            return "{\"text\":\"Subscribed\"}";
+            String projectName = request.getValues().getProject().getLabel();
+            return String.format("{\"text\":\"You’ve successfully subscribed %s to %s notifications\"}",
+                    request.getContext().getChannel().getDisplayName(), projectName);
         }
 
-        log.info("Get files for project: " + request.getValues().getProject().getValue() + " has come");
-        log.debug("Get files for project request: " + request);
+        return sendProjectFile(request, teamId);
+    }
 
+    @PostMapping("{teamId}/projectFiles")
+    public Object sendProjectFileSelection(@RequestBody InputPayload request, @PathVariable String teamId) {
         FigmaProjectFilesDTO projectFiles = figmaFileService.getProjectFiles(request);
 
         if (projectFiles.getFiles().isEmpty()) {
             throw new FigmaNoFilesInProjectSubscriptionException();
         }
 
-        FigmaFilesFormReplyCreator figmaFilesFormReplyCreator = new FigmaFilesFormReplyCreator();
+        request.getValues().setTeamId(teamId);
+        TeamProjectDTO projects = figmaProjectService.getProjectsByTeamId(request);
 
-        return figmaFilesFormReplyCreator.create(projectFiles, teamId);
+        ProjectFormReplyCreator projectFormReplyCreator = new ProjectFormReplyCreator();
+        MMStaticSelectField project = request.getValues().getProject();
+        FormType formType = projectFormReplyCreator.create(projects, teamId);
+        projectFormReplyCreator.addFilesToForm(projectFiles.getFiles(), formType, project.getLabel(), project.getValue());
+        return formType;
     }
 
-    @PostMapping("{teamId}/projects/file")
-    public String sendProjectFile(@RequestBody InputPayload request, @PathVariable String teamId) {
+    private String sendProjectFile(@RequestBody InputPayload request, String teamId) {
         log.debug(request.toString());
         String fileKey = request.getValues().getFile().getValue();
         request.getValues().setTeamId(teamId);
@@ -140,7 +150,9 @@ public class SubscribeController {
         fileNotificationService.createTeamWebhook(request);
         userDataKVService.saveUserData(request);
         subscribeService.subscribeToFile(request);
-        return "{\"text\":\"Subscribed\"}";
+        String fileName = request.getValues().getFile().getLabel();
+        return String.format("{\"text\":\"You’ve successfully subscribed %s to %s notifications\"}",
+                request.getContext().getChannel().getDisplayName(), fileName);
     }
 
     @PostMapping("/subscriptions")

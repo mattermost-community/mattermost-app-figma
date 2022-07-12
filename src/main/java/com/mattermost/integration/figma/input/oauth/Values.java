@@ -23,6 +23,4 @@ public class Values{
     private MMStaticSelectField project;
     @JsonProperty("file_id")
     private MMStaticSelectField file;
-    @JsonProperty("is_project_subscription")
-    private String isProjectSubscription;
 }

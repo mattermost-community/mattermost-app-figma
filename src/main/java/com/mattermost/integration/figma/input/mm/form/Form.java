@@ -13,4 +13,5 @@ public class Form {
     private String title;
     private Submit submit;
     private List<Field> fields;
+    private Submit source;
 }

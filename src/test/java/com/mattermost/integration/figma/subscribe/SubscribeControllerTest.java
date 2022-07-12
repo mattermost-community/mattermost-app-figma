@@ -22,9 +22,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
 
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,6 +45,7 @@ class SubscribeControllerTest {
     private final String REFRESH_TOKEN = "REFRESH_TOKEN";
     private static final String DM_CHANNEL = "D";
     private static final String VALUE = "value";
+    private static final String ALL_FILES = "all_files";
 
     @InjectMocks
     private SubscribeController testedInstance;
@@ -150,22 +152,31 @@ class SubscribeControllerTest {
 
     @Test
     public void shouldSubscribeToProject() {
-        when(values.getIsProjectSubscription()).thenReturn("true");
+        MMStaticSelectField file = new MMStaticSelectField();
+        file.setValue(ALL_FILES);
+        when(values.getFile()).thenReturn(file);
+        when(values.getProject()).thenReturn(field);
+        when(field.getLabel()).thenReturn("test");
+        when(field.getValue()).thenReturn("test");
 
         String actualResponse = (String) testedInstance.sendProjectFiles(inputPayload, TEAM_ID);
 
-        assertEquals("{\"text\":\"Subscribed\"}", actualResponse);
+        assertEquals("{\"text\":\"You’ve successfully subscribed null to test notifications\"}", actualResponse);
     }
 
     @Test
     public void shouldCreateFilesForm() {
-        when(values.getIsProjectSubscription()).thenReturn("false");
+        when(values.getFile()).thenReturn(file);
+        when(file.getValue()).thenReturn("test");
         when(figmaFileService.getProjectFiles(inputPayload)).thenReturn(figmaProjectFilesDTO);
         when(values.getProject()).thenReturn(field);
-        when(field.getValue()).thenReturn(VALUE);
         when(figmaProjectFilesDTO.getFiles()).thenReturn(Collections.singletonList(figmaProjectFileDTO));
+        when(figmaProjectService.getProjectsByTeamId(inputPayload)).thenReturn(teamProjectDTO);
+        when(teamProjectDTO.getProjects()).thenReturn(Collections.singletonList(projectDTO));
+        when(projectDTO.getId()).thenReturn("test");
+        when(projectDTO.getName()).thenReturn("test");
 
-        FormType formType = (FormType) testedInstance.sendProjectFiles(inputPayload, TEAM_ID);
+        FormType formType = (FormType) testedInstance.sendProjectFileSelection(inputPayload, TEAM_ID);
 
         assertNotNull(formType);
     }
@@ -174,10 +185,12 @@ class SubscribeControllerTest {
     public void shouldSubscribeToFile() {
         when(values.getFile()).thenReturn(file);
         when(file.getValue()).thenReturn(VALUE);
+        when(values.getProject()).thenReturn(field);
+        when(file.getLabel()).thenReturn("test");
 
-        String actual = testedInstance.sendProjectFile(inputPayload, TEAM_ID);
+        String actual = (String) testedInstance.sendProjectFiles(inputPayload, TEAM_ID);
 
-        assertEquals(TEXT_SUBSCRIBED, actual);
+        assertEquals("{\"text\":\"You’ve successfully subscribed null to test notifications\"}", actual);
     }
 
     @Test
@@ -189,7 +202,7 @@ class SubscribeControllerTest {
         when(fileInfo.getFileId()).thenReturn(VALUE);
         when(fileInfo.getFileName()).thenReturn(NAME);
 
-        String actual = testedInstance.sendProjectFile(inputPayload, TEAM_ID);
+        String actual = (String) testedInstance.sendProjectFiles(inputPayload, TEAM_ID);
 
         assertEquals(SUBSCRIBED, actual);
     }
@@ -229,5 +242,4 @@ class SubscribeControllerTest {
 
         assertThrows(MMFigmaUserNotSavedException.class, () -> testedInstance.sendChannelSubscriptions(inputPayload));
     }
-
 }
