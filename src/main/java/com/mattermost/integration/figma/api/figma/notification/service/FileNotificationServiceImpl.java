@@ -40,6 +40,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.mattermost.integration.figma.constant.prefixes.webhook.TeamWebhookPrefixes.TEAM_WEBHOOK_PREFIX;
+import static com.mattermost.integration.figma.constant.prefixes.webhook.TeamWebhookPrefixes.WEBHOOK_ID_PREFIX;
 import static org.apache.logging.log4j.util.Strings.isBlank;
 
 @Service
@@ -51,8 +53,6 @@ public class FileNotificationServiceImpl implements FileNotificationService {
     private static final String REDIRECT_URL = "%s%s";
     private static final String FILE_COMMENT_URL = "/webhook/comment";
     private static final String MENTIONED_NOTIFICATION_ROOT = "commented on";
-    private static final String WEBHOOK_ID_PREFIX = "figma-webhook-id-";
-    private static final String TEAM_WEBHOOK_PREFIX = "team-webhook-id-";
 
     @Autowired
     @Qualifier("figmaRestTemplate")

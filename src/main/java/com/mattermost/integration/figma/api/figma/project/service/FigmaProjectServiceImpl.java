@@ -5,10 +5,12 @@ import com.mattermost.integration.figma.api.figma.webhook.service.FigmaWebhookSe
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.input.figma.notification.FigmaWebhookResponse;
 import com.mattermost.integration.figma.input.figma.notification.FileCommentWebhookResponse;
+import com.mattermost.integration.figma.input.mm.form.Option;
 import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.security.service.OAuthService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
@@ -21,6 +23,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class FigmaProjectServiceImpl implements FigmaProjectService {
 
     private final String PROJECT_BY_TEAM_URL = "https://api.figma.com/v1/teams/%s/projects";
@@ -86,5 +89,23 @@ public class FigmaProjectServiceImpl implements FigmaProjectService {
 
         ResponseEntity<TeamProjectDTO> resp = restTemplate.exchange(url, HttpMethod.GET, request, TeamProjectDTO.class);
         return resp.getBody();
+    }
+
+    public Optional<TeamProjectDTO> getProjectsByTeamIdWithCustomRestTemplate(String teamId, String accessToken,
+                                                                              RestTemplate restTemplate) {
+
+        String url = String.format(PROJECT_BY_TEAM_URL, teamId);
+        HttpHeaders headers = new HttpHeaders();
+
+        headers.set("Authorization", String.format("Bearer %s", accessToken));
+        HttpEntity<Object> request = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<TeamProjectDTO> resp = restTemplate.exchange(url, HttpMethod.GET, request, TeamProjectDTO.class);
+            return Optional.of(resp.getBody());
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return Optional.empty();
+        }
     }
 }

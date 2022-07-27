@@ -6,7 +6,11 @@ import com.mattermost.integration.figma.api.figma.file.service.FigmaFileService;
 import com.mattermost.integration.figma.api.figma.notification.service.FileNotificationService;
 import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
 import com.mattermost.integration.figma.api.figma.project.service.FigmaProjectService;
+import com.mattermost.integration.figma.api.figma.team.TeamNameService;
+import com.mattermost.integration.figma.api.figma.team.dto.TeamNameDto;
 import com.mattermost.integration.figma.api.mm.dm.component.ProjectFormReplyCreator;
+import com.mattermost.integration.figma.api.mm.dm.component.TeamNameFormCreator;
+import com.mattermost.integration.figma.api.mm.kv.KVService;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.api.mm.user.MMUserService;
@@ -29,6 +33,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -48,10 +53,50 @@ public class SubscribeController {
     private FigmaFileService figmaFileService;
     @Autowired
     private MMUserService mmUserService;
+    @Autowired
+    private TeamNameService teamNameService;
+    @Autowired
+    private TeamNameFormCreator teamNameFormCreator;
+    @Autowired
+    private KVService kvService;
 
-    private String ALL_FILES = "all_files";
+    private final String ALL_FILES = "all_files";
+    private final static String CREATE_NEW_WEBHOOK = "new_webhook";
+    private final static int TEXT_FIELD_INDEX = 1;
 
     @PostMapping("/subscribe")
+    public FormType createFirstSubscribeForm(@RequestBody InputPayload request) {
+        String mmSiteUrl = request.getContext().getMattermostSiteUrl();
+        String botAccessToken = request.getContext().getBotAccessToken();
+        List<TeamNameDto> allTeamNames = teamNameService.getAllTeamNames(request.getContext().getActingUser().getId(), mmSiteUrl, botAccessToken);
+        return teamNameFormCreator.createTeamSubscribeForm(allTeamNames);
+    }
+
+    @PostMapping("team/refresh")
+    public FormType refreshSubscribeForm(@RequestBody InputPayload request) {
+        String mmSiteUrl = request.getContext().getMattermostSiteUrl();
+        String botAccessToken = request.getContext().getBotAccessToken();
+        List<TeamNameDto> allTeamNames = teamNameService.getAllTeamNames(request.getContext().getActingUser().getId(), mmSiteUrl, botAccessToken);
+        MMStaticSelectField teamNameField = request.getValues().getTeamName();
+        FormType teamSubscribeForm = teamNameFormCreator.createTeamSubscribeForm(allTeamNames);
+        teamNameFormCreator.modifyFormFirstField(teamSubscribeForm, teamNameField.getLabel(), teamNameField.getValue());
+        if (CREATE_NEW_WEBHOOK.equals(teamNameField.getValue())) {
+            return teamSubscribeForm;
+        }
+        teamSubscribeForm.getForm().getFields().remove(TEXT_FIELD_INDEX);
+        return teamSubscribeForm;
+    }
+
+    @PostMapping("/team/subscribe")
+    public FormType subscribeToSpecificTeam(@RequestBody InputPayload request) {
+        MMStaticSelectField teamNameField = request.getValues().getTeamName();
+        if (CREATE_NEW_WEBHOOK.equals(teamNameField.getValue())) {
+            return subscribe(request);
+        }
+        request.getValues().setTeamId(teamNameField.getValue());
+        return subscribe(request);
+    }
+
     public FormType subscribe(@RequestBody InputPayload request) {
         log.debug(request.toString());
         if ("D".equalsIgnoreCase(request.getContext().getChannel().getType())) {

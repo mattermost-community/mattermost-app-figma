@@ -76,7 +76,7 @@ public class UserDataKVServiceImpl implements UserDataKVService {
 
     @Override
     public void saveNewTeamToAllTeamIdsSet(String teamId, String mmSiteUrl, String botAccessToken) {
-        Set<String> allFigmaTeamIds = getAllFigmaUserIds(mmSiteUrl, botAccessToken);
+        Set<String> allFigmaTeamIds = getAllFigmaTeamIds(mmSiteUrl, botAccessToken);
         if (Objects.isNull(allFigmaTeamIds)) {
             allFigmaTeamIds = new HashSet<>();
         }

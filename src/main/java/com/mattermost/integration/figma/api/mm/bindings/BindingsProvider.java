@@ -82,7 +82,6 @@ public class BindingsProvider {
         subscribeForm.setTitle("Figma notifications");
         subscribeForm.setIcon(ICON);
         subscribeForm.setSubmit(createSubscribeSubmit());
-        subscribeForm.setFields(Collections.singletonList(createSingleField("team_id")));
         return subscribeForm;
     }
 
