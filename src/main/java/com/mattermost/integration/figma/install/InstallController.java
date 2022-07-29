@@ -35,6 +35,7 @@ public class InstallController {
         }
 
         Manifest man = manifestOptional.get();
+        man.setWebhookAuthType("none");
         man.setHttp(http);
         return man;
 
