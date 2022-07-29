@@ -15,6 +15,8 @@ import java.util.Objects;
 @Slf4j
 public class BindingServiceImpl implements BindingService {
     private static final String ADMIN_ROLE = "system_admin system_user";
+    private static final String TEAM_ADMIN = "team_admin";
+    private static final String CHANNEL_ADMIN = "channel_admin";
     private static final int FIRST_INSTANCE = 0;
 
     @Autowired
@@ -30,9 +32,15 @@ public class BindingServiceImpl implements BindingService {
         String botAccessToken = payload.getContext().getBotAccessToken();
 
         MMUser currentUser = mmUserService.getUserById(payload.getContext().getActingUser().getId(), mmSiteUrl, botAccessToken);
+        String userRoles = currentUser.getRoles();
 
-        if (currentUser.getRoles().contains(ADMIN_ROLE)) {
+        if (userRoles.contains(ADMIN_ROLE)) {
             addCommandToBindings(defaultBindings, bindingsProvider.createConfigureBinding());
+        }
+
+        if (Objects.nonNull(payload.getContext().getOauth2().getUser().getUserId()) &&
+                (userRoles.contains(TEAM_ADMIN) || userRoles.contains(CHANNEL_ADMIN) || userRoles.contains(ADMIN_ROLE))) {
+            addCommandToBindings(defaultBindings, bindingsProvider.createSubscribeBinding());
         }
 
         if (Objects.isNull(payload.getContext().getOauth2().getUser().getUserId())) {
@@ -42,7 +50,6 @@ public class BindingServiceImpl implements BindingService {
         else {
             addCommandToBindings(defaultBindings, bindingsProvider.createListBinding());
             addCommandToBindings(defaultBindings, bindingsProvider.createDisconnectBinding());
-            addCommandToBindings(defaultBindings, bindingsProvider.createSubscribeBinding());
         }
 
         return defaultBindings;
