@@ -16,6 +16,7 @@ import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.api.mm.user.MMUserService;
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaNoFilesInProjectSubscriptionException;
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaNoProjectsInTeamSubscriptionException;
+import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFieldLoadException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFigmaUserNotSavedException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionFromDMChannelException;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMSubscriptionInChannelWithoutBotException;
@@ -91,6 +92,9 @@ public class SubscribeController {
     public FormType subscribeToSpecificTeam(@RequestBody InputPayload request) {
         MMStaticSelectField teamNameField = request.getValues().getTeamName();
         if (CREATE_NEW_WEBHOOK.equals(teamNameField.getValue())) {
+            if (Objects.isNull(request.getValues().getTeamId())) {
+                throw new MMFieldLoadException("team id");
+            }
             return subscribe(request);
         }
         request.getValues().setTeamId(teamNameField.getValue());
@@ -147,6 +151,9 @@ public class SubscribeController {
     @PostMapping("{teamId}/projects")
     public Object sendProjectFiles(@RequestBody InputPayload request, @PathVariable String teamId) {
         log.debug(request.toString());
+        if (Objects.isNull(request.getValues().getFile())) {
+            throw new MMFieldLoadException("file");
+        }
         if (ALL_FILES.equals(request.getValues().getFile().getValue())) {
             request.getValues().setTeamId(teamId);
             fileNotificationService.createTeamWebhook(request);

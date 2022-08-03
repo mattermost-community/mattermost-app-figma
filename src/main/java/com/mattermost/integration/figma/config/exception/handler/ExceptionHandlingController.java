@@ -48,6 +48,7 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
             MMFigmaCredsNotSavedException.class,
             MMBadRequestException.class,
             MMForbiddenException.class,
+            MMFieldLoadException.class,
             FigmaBasicTeamSubscriptionException.class,
             FigmaNoFilesInProjectSubscriptionException.class,
             FigmaNoProjectsInTeamSubscriptionException.class,
