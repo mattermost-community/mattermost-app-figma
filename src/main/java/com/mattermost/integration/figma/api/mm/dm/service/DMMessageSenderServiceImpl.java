@@ -5,6 +5,7 @@ import com.mattermost.integration.figma.api.figma.user.service.FileOwnerService;
 import com.mattermost.integration.figma.api.mm.dm.component.DMCallButtonMessageCreator;
 import com.mattermost.integration.figma.api.mm.dm.component.DMFormMessageCreator;
 import com.mattermost.integration.figma.api.mm.dm.dto.*;
+import com.mattermost.integration.figma.api.mm.kv.KVService;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.api.mm.kv.dto.ProjectInfo;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.mattermost.integration.figma.constant.prefixes.webhook.TeamWebhookPrefixes.WEBHOOK_ID_PREFIX;
 import static org.apache.logging.log4j.util.Strings.isBlank;
 
 @Service
@@ -53,10 +55,12 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
     private FileOwnerService fileOwnerService;
     @Autowired
     private DMCallButtonMessageCreator messageCreator;
+    @Autowired
+    private KVService kvService;
 
 
     public String sendMessageToCommentAuthor(FigmaWebhookResponse figmaWebhookResponse, Context context, String fileOwnerId) {
-        String token = getToken(figmaWebhookResponse, context);
+        String token = getAccessTokenByWebhookId(figmaWebhookResponse.getWebhookId(), context.getMattermostSiteUrl(), context.getBotAccessToken());
         if (StringUtils.isBlank(token)) {
             return token;
         }
@@ -170,6 +174,18 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
         }
         messageService.sendDMMessage(formMessageCreator.createDMMessageWithPropsPayload(messageWithPropsFields.get(), context.getBotAccessToken(),
                 context.getMattermostSiteUrl()));
+    }
+
+    private String getAccessTokenByWebhookId(String webhookId, String mmSiteUrl, String botAccessToken) {
+        String userId = kvService.get(WEBHOOK_ID_PREFIX.concat(webhookId), mmSiteUrl, botAccessToken);
+        Optional<UserDataDto> userDataDto = userDataKVService.getUserData(userId, mmSiteUrl, botAccessToken);
+        if (userDataDto.isEmpty()) {
+            return StringUtils.EMPTY;
+        }
+
+        FigmaOAuthRefreshTokenResponseDTO figmaOAuthRefreshTokenResponseDTO =
+                oAuthService.refreshToken(userDataDto.get().getClientId(), userDataDto.get().getClientSecret(), userDataDto.get().getRefreshToken());
+        return figmaOAuthRefreshTokenResponseDTO.getAccessToken();
     }
 
     private String getToken(FigmaWebhookResponse figmaWebhookResponse, Context context) {

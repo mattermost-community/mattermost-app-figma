@@ -5,6 +5,7 @@ import com.mattermost.integration.figma.input.figma.notification.FileCommentWebh
 import com.mattermost.integration.figma.api.figma.notification.service.FileNotificationService;
 import com.mattermost.integration.figma.webhook.service.FileCommentService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,6 +36,11 @@ public class WebhookController {
         fileCommentService.updateName(response);
         fileNotificationService.sendFileNotificationMessageToMMSubscribedChannels(response);
         fileNotificationService.sendFileNotificationMessageToMM(response);
+    }
+
+    @PostMapping("/ping")
+    public ResponseEntity<String> lambdaPing() {
+        return ResponseEntity.ok("PONG");
     }
 }
 

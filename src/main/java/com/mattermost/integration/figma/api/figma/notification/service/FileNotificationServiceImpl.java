@@ -15,6 +15,7 @@ import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaC
 import com.mattermost.integration.figma.input.figma.notification.FigmaWebhookResponse;
 import com.mattermost.integration.figma.input.figma.notification.FileCommentNotificationRequest;
 import com.mattermost.integration.figma.input.figma.notification.FileCommentWebhookResponse;
+import com.mattermost.integration.figma.input.figma.notification.Mention;
 import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
@@ -31,14 +32,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import com.fasterxml.jackson.core.type.TypeReference;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.mattermost.integration.figma.constant.prefixes.webhook.TeamWebhookPrefixes.TEAM_WEBHOOK_PREFIX;
 import static com.mattermost.integration.figma.constant.prefixes.webhook.TeamWebhookPrefixes.WEBHOOK_ID_PREFIX;
@@ -129,12 +126,13 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         String botAccessToken = context.getBotAccessToken();
         String commenterTeamId = figmaWebhookService.getCurrentUserTeamId(figmaWebhookResponse.getWebhookId(),
                 mattermostSiteUrl, botAccessToken);
+        List<Mention> mentions = new ArrayList<>(figmaWebhookResponse.getMentions());
 
         userDataKVService.saveUserToCertainTeam(commenterTeamId, figmaWebhookResponse.getTriggeredBy().getId(),
                 mattermostSiteUrl, botAccessToken);
 
         String fileOwnerId = dmMessageSenderService.sendMessageToFileOwner(figmaWebhookResponse, context);
-        figmaWebhookResponse.getMentions().removeIf(mention -> mention.getId().equals(fileOwnerId));
+        mentions.removeIf(mention -> mention.getId().equals(fileOwnerId));
 
         if (!isBlank(figmaWebhookResponse.getParentId())) {
             String authorId = dmMessageSenderService.sendMessageToCommentAuthor(figmaWebhookResponse, context, fileOwnerId);
@@ -143,10 +141,11 @@ public class FileNotificationServiceImpl implements FileNotificationService {
                 return;
             }
 
-            figmaWebhookResponse.getMentions().removeIf(mention -> mention.getId().equals(authorId));
+            mentions.removeIf(mention -> mention.getId().equals(authorId));
+
         }
-        if (!figmaWebhookResponse.getMentions().isEmpty()) {
-            figmaWebhookResponse.getMentions().stream().distinct().map((mention -> userDataKVService.getUserData(mention.getId(), mattermostSiteUrl, botAccessToken)))
+        if (!mentions.isEmpty()) {
+            mentions.stream().distinct().map((mention -> userDataKVService.getUserData(mention.getId(), mattermostSiteUrl, botAccessToken)))
                     .filter(Optional::isPresent).map(Optional::get)
                     .filter(UserDataDto::isConnected)
                     .forEach(userData -> dmMessageSenderService.sendMessageToSpecificReceiver(context, userData, figmaWebhookResponse, MENTIONED_NOTIFICATION_ROOT));
