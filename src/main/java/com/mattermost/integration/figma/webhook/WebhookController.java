@@ -37,10 +37,5 @@ public class WebhookController {
         fileNotificationService.sendFileNotificationMessageToMMSubscribedChannels(response);
         fileNotificationService.sendFileNotificationMessageToMM(response);
     }
-
-    @PostMapping("/ping")
-    public ResponseEntity<String> lambdaPing() {
-        return ResponseEntity.ok("PONG");
-    }
 }
 

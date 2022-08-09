@@ -5,7 +5,9 @@ import com.mattermost.integration.figma.input.mm.manifest.Manifest;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -38,6 +40,11 @@ public class InstallController {
         man.setWebhookAuthType("none");
         man.setHttp(http);
         return man;
+    }
 
+
+    @PostMapping("/ping")
+    public String lambdaPing() {
+        return "{\"type\":\"ok\",\"text\":\"PONG\"}";
     }
 }
