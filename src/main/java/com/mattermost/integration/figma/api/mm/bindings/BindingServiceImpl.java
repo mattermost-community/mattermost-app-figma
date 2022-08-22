@@ -14,7 +14,7 @@ import java.util.Objects;
 @Service
 @Slf4j
 public class BindingServiceImpl implements BindingService {
-    private static final String ADMIN_ROLE = "system_admin system_user";
+    private static final String ADMIN_ROLE = "system_admin";
     private static final String TEAM_ADMIN = "team_admin";
     private static final String CHANNEL_ADMIN = "channel_admin";
     private static final int FIRST_INSTANCE = 0;

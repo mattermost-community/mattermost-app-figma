@@ -19,10 +19,16 @@
     </fileSets>
     <files>
         <file>
-            <source>target/java-mm-figma-function.zip</source>
+            <source>target/classes/static/manifest.json</source>
             <fileMode>0777</fileMode>
             <outputDirectory>/</outputDirectory>
-            <destName>java-mm-figma-function.zip</destName>
+            <destName>manifest.json</destName>
+        </file>
+        <file>
+            <source>target/figma-0.0.1-SNAPSHOT.jar</source>
+            <fileMode>0777</fileMode>
+            <outputDirectory>/</outputDirectory>
+            <destName>java-mm-figma-function.jar</destName>
         </file>
     </files>
 </assembly>

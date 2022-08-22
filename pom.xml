@@ -167,7 +167,7 @@
 										<appendAssemblyId>false</appendAssemblyId>
 										<attach>false</attach>
 										<descriptors>
-											<descriptor>inner-zip.xml</descriptor>
+											<descriptor>inner-jar.xml</descriptor>
 										</descriptors>
 									</configuration>
 								</execution>
