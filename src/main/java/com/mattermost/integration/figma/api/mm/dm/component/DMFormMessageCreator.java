@@ -6,7 +6,9 @@ import com.mattermost.integration.figma.input.mm.form.*;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class DMFormMessageCreator {
@@ -70,10 +72,13 @@ public class DMFormMessageCreator {
     }
 
     private Submit prepareSubmit(String fileId, String commentId) {
-        String replyPath = String.format("%s?fileId=%s&commentId=%s", REPLY_PATH, fileId, commentId);
+        Map<String, String> submitState = new HashMap<>();
+        submitState.put("fileId", fileId);
+        submitState.put("commentId", commentId);
         Submit submit = new Submit();
-        submit.setPath(replyPath);
+        submit.setPath(REPLY_PATH);
         submit.setExpand(prepareExpand());
+        submit.setState(submitState);
         return submit;
     }
 

@@ -1,14 +1,15 @@
 package com.mattermost.integration.figma.install;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mattermost.integration.figma.api.mm.bindings.BindingService;
+import com.mattermost.integration.figma.input.mm.binding.BindingsDTO;
 import com.mattermost.integration.figma.input.mm.manifest.Http;
 import com.mattermost.integration.figma.input.mm.manifest.Manifest;
+import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -20,7 +21,13 @@ public class InstallController {
     private String appRootUrl;
 
     @Autowired
+    private BindingService bindingService;
+
+    @Autowired
     private JsonUtils jsonUtils;
+
+    @Autowired
+    private ObjectMapper mapper;
 
     @GetMapping("/manifest.json")
     public Manifest getManifest() throws IOException {
@@ -40,6 +47,12 @@ public class InstallController {
         man.setWebhookAuthType("none");
         man.setHttp(http);
         return man;
+    }
+
+    @PostMapping(value = "/bindings")
+    public BindingsDTO postBindings(@RequestBody String payloadString) throws IOException {
+        InputPayload payload = mapper.readValue(payloadString, InputPayload.class);
+        return bindingService.filterBindingsDependingOnUser(payload);
     }
 
 

@@ -1,6 +1,8 @@
 package com.mattermost.integration.figma.subscribe;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFilesDTO;
 import com.mattermost.integration.figma.api.figma.file.service.FigmaFileService;
 import com.mattermost.integration.figma.api.figma.notification.service.FileNotificationService;
@@ -10,7 +12,6 @@ import com.mattermost.integration.figma.api.figma.team.TeamNameService;
 import com.mattermost.integration.figma.api.figma.team.dto.TeamNameDto;
 import com.mattermost.integration.figma.api.mm.dm.component.ProjectFormReplyCreator;
 import com.mattermost.integration.figma.api.mm.dm.component.TeamNameFormCreator;
-import com.mattermost.integration.figma.api.mm.kv.KVService;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.api.mm.user.MMUserService;
@@ -59,14 +60,19 @@ public class SubscribeController {
     @Autowired
     private TeamNameFormCreator teamNameFormCreator;
     @Autowired
-    private KVService kvService;
+    private ObjectMapper mapper;
 
     private final String ALL_FILES = "all_files";
     private final static String CREATE_NEW_WEBHOOK = "new_webhook";
     private final static int TEXT_FIELD_INDEX = 1;
 
     @PostMapping("/subscribe")
-    public FormType createFirstSubscribeForm(@RequestBody InputPayload request) {
+    public FormType createFirstSubscribeForm(@RequestBody String requestString) throws JsonProcessingException {
+
+        log.debug(requestString);
+
+        InputPayload request = mapper.readValue(requestString, InputPayload.class);
+
         String mmSiteUrl = request.getContext().getMattermostSiteUrl();
         String botAccessToken = request.getContext().getBotAccessToken();
         List<TeamNameDto> allTeamNames = teamNameService.getAllTeamNames(request.getContext().getActingUser().getId(), mmSiteUrl, botAccessToken);
@@ -74,7 +80,12 @@ public class SubscribeController {
     }
 
     @PostMapping("team/refresh")
-    public FormType refreshSubscribeForm(@RequestBody InputPayload request) {
+    public FormType refreshSubscribeForm(@RequestBody String requestString) throws JsonProcessingException {
+
+        log.debug(requestString);
+
+        InputPayload request = mapper.readValue(requestString, InputPayload.class);
+
         String mmSiteUrl = request.getContext().getMattermostSiteUrl();
         String botAccessToken = request.getContext().getBotAccessToken();
         List<TeamNameDto> allTeamNames = teamNameService.getAllTeamNames(request.getContext().getActingUser().getId(), mmSiteUrl, botAccessToken);
@@ -89,7 +100,12 @@ public class SubscribeController {
     }
 
     @PostMapping("/team/subscribe")
-    public FormType subscribeToSpecificTeam(@RequestBody InputPayload request) {
+    public FormType subscribeToSpecificTeam(@RequestBody String requestString) throws JsonProcessingException {
+
+        log.debug(requestString);
+
+        InputPayload request = mapper.readValue(requestString, InputPayload.class);
+
         MMStaticSelectField teamNameField = request.getValues().getTeamName();
         if (CREATE_NEW_WEBHOOK.equals(teamNameField.getValue())) {
             if (Objects.isNull(request.getValues().getTeamId())) {
@@ -101,7 +117,7 @@ public class SubscribeController {
         return subscribe(request);
     }
 
-    public FormType subscribe(@RequestBody InputPayload request) {
+    public FormType subscribe(InputPayload request) {
         log.debug(request.toString());
         if ("D".equalsIgnoreCase(request.getContext().getChannel().getType())) {
             log.error("Subscription from DM channel:" + request);
@@ -149,8 +165,11 @@ public class SubscribeController {
     }
 
     @PostMapping("{teamId}/projects")
-    public Object sendProjectFiles(@RequestBody InputPayload request, @PathVariable String teamId) {
-        log.debug(request.toString());
+    public Object sendProjectFiles(@RequestBody String requestString, @PathVariable String teamId) throws JsonProcessingException {
+
+        log.debug(requestString);
+        InputPayload request = mapper.readValue(requestString, InputPayload.class);
+
         if (Objects.isNull(request.getValues().getFile())) {
             throw new MMFieldLoadException("file");
         }
@@ -168,7 +187,12 @@ public class SubscribeController {
     }
 
     @PostMapping("{teamId}/projectFiles")
-    public Object sendProjectFileSelection(@RequestBody InputPayload request, @PathVariable String teamId) {
+    public Object sendProjectFileSelection(@RequestBody String requestString, @PathVariable String teamId) throws JsonProcessingException {
+
+        log.debug(requestString);
+
+        InputPayload request = mapper.readValue(requestString, InputPayload.class);
+
         FigmaProjectFilesDTO projectFiles = figmaFileService.getProjectFiles(request);
 
         if (projectFiles.getFiles().isEmpty()) {
@@ -185,7 +209,7 @@ public class SubscribeController {
         return formType;
     }
 
-    private String sendProjectFile(@RequestBody InputPayload request, String teamId) {
+    private String sendProjectFile(InputPayload request, String teamId) {
         log.debug(request.toString());
         String fileKey = request.getValues().getFile().getValue();
         request.getValues().setTeamId(teamId);
@@ -208,8 +232,10 @@ public class SubscribeController {
     }
 
     @PostMapping("/subscriptions")
-    public String sendChannelSubscriptions(@RequestBody InputPayload request) {
-        System.out.println(request);
+    public String sendChannelSubscriptions(@RequestBody String requestString) throws JsonProcessingException {
+
+        InputPayload request = mapper.readValue(requestString, InputPayload.class);
+
         log.info("Get Subscriptions for channel: " + request.getContext().getChannel().getId() + " has come");
         log.debug("Get files request: " + request);
 
@@ -232,13 +258,20 @@ public class SubscribeController {
     }
 
     @PostMapping("/project-files/file/{fileId}/remove")
-    public String unsubscribe(@PathVariable String fileId, @RequestBody InputPayload request) {
+    public String unsubscribe(@PathVariable String fileId, @RequestBody String requestString) throws JsonProcessingException {
+        log.debug(requestString);
+        InputPayload request = mapper.readValue(requestString, InputPayload.class);
         subscribeService.unsubscribeFromFile(request, fileId);
         return "{\"text\":\"Unsubscribed\"}";
     }
 
     @PostMapping("/project/{projectId}/remove")
-    public String unsubscribeFromProject(@PathVariable String projectId, @RequestBody InputPayload request) {
+    public String unsubscribeFromProject(@PathVariable String projectId, @RequestBody String requestString) throws JsonProcessingException {
+
+        log.debug(requestString);
+
+        InputPayload request = mapper.readValue(requestString, InputPayload.class);
+
         subscribeService.unsubscribeFromProject(request, projectId);
         return "{\"text\":\"Unsubscribed\"}";
     }

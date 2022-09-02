@@ -1,5 +1,7 @@
 package com.mattermost.integration.figma.security;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFigmaCredsNotSavedException;
 import com.mattermost.integration.figma.input.oauth.ActingUser;
@@ -35,6 +37,10 @@ class OAuthControllerTest {
 
     @Mock
     private InputPayload inputPayload;
+
+    @Mock
+    private ObjectMapper objectMapper;
+
     @Mock
     private Context context;
     @Mock
@@ -44,15 +50,19 @@ class OAuthControllerTest {
     @Mock
     private UserDataKVService userDataKVService;
 
+    private final String payloadString = "";
+
+
     @BeforeEach
-    void setUp() {
+    void setUp() throws JsonProcessingException {
+        when(objectMapper.readValue(payloadString, InputPayload.class)).thenReturn(inputPayload);
         when(inputPayload.getContext()).thenReturn(context);
         when(context.getOauth2()).thenReturn(oAuth2);
     }
 
     @Test
     void shouldThrowMMFigmaCredsNotSavedExceptionWhenFigmaCredentialsNotStored() {
-        assertThrows(MMFigmaCredsNotSavedException.class, () -> testedInstance.getOauthForm(inputPayload));
+        assertThrows(MMFigmaCredsNotSavedException.class, () -> testedInstance.getOauthForm(payloadString));
     }
 
     @Test
@@ -61,29 +71,34 @@ class OAuthControllerTest {
         when(oAuth2.getClientId()).thenReturn(CLIENT_ID);
         when(oAuthService.generateUrl(any())).thenReturn(URL);
 
-        String url = testedInstance.getOauthForm(inputPayload);
+        String url = null;
+        try {
+            url = testedInstance.getOauthForm(payloadString);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
 
         assertEquals(EXPECTED_RESPONSE, url);
     }
 
     @Test
-    void shouldStoreCreds() {
-        testedInstance.posOauthCreds(inputPayload);
+    void shouldStoreCreds() throws JsonProcessingException {
+        testedInstance.posOauthCreds(payloadString);
 
         verify(oAuthService).storeOAuthCreds(inputPayload);
     }
 
     @Test
-    void shouldReturnConnectUrl() {
+    void shouldReturnConnectUrl() throws JsonProcessingException {
         when(oAuthService.getConnectUrl(inputPayload)).thenReturn(URL);
 
-        String connectUrl = testedInstance.connect(inputPayload);
+        String connectUrl = testedInstance.connect(payloadString);
 
         assertEquals(EXPECTED_CONNECT_URL, connectUrl);
     }
 
     @Test
-    void shouldStoreFigmaUserToken() {
+    void shouldStoreFigmaUserToken() throws JsonProcessingException {
         String testString = "1";
         ActingUser actingUser = new ActingUser();
         actingUser.setId(testString);
@@ -94,7 +109,7 @@ class OAuthControllerTest {
         when(oAuthService.getFigmaUserToken(inputPayload)).thenReturn(figmaTokenDTO);
         doNothing().when(userDataKVService).changeUserConnectionStatus(testString, true, testString, testString);
 
-        testedInstance.postOauthClientSecret(inputPayload);
+        testedInstance.postOauthClientSecret(payloadString);
 
         verify(oAuthService).storeFigmaUserToken(inputPayload, figmaTokenDTO);
         verify(userDataKVService).changeUserConnectionStatus(testString, true, testString, testString);

@@ -15,4 +15,6 @@ public class InputPayload {
     private String rawCommand;
     @JsonProperty("values")
     private Values values;
+    @JsonProperty("state")
+    private State state;
 }

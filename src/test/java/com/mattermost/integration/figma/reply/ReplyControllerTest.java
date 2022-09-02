@@ -1,5 +1,7 @@
 package com.mattermost.integration.figma.reply;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mattermost.integration.figma.api.figma.comment.service.CommentService;
 import com.mattermost.integration.figma.input.oauth.*;
 import com.mattermost.integration.figma.security.dto.FigmaOAuthRefreshTokenResponseDTO;
@@ -44,18 +46,29 @@ class ReplyControllerTest {
     @Mock
     private User user;
     @Mock
-    FigmaOAuthRefreshTokenResponseDTO token;
+    private FigmaOAuthRefreshTokenResponseDTO token;
+    @Mock
+    private State state;
+
+    @Mock
+    private ObjectMapper mapper;
+
+    private final String payload = "";
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws JsonProcessingException {
+        when(mapper.readValue(payload, InputPayload.class)).thenReturn(inputPayload);
         when(inputPayload.getContext()).thenReturn(context);
         when(context.getOauth2()).thenReturn(oAuth2);
 
     }
 
     @Test
-    public void shouldCallPostCommentService() {
+    public void shouldCallPostCommentService() throws JsonProcessingException {
         when(inputPayload.getValues()).thenReturn(values);
+        when(inputPayload.getState()).thenReturn(state);
+        when(state.getFileId()).thenReturn(FILE_ID);
+        when(state.getCommentId()).thenReturn(COMMENT_ID);
         when(values.getMessage()).thenReturn(MESSAGE);
         when(oAuth2.getClientId()).thenReturn(CLIENT_ID);
         when(oAuth2.getClientSecret()).thenReturn(CLIENT_SECRET);
@@ -66,7 +79,7 @@ class ReplyControllerTest {
 
         when(token.getAccessToken()).thenReturn(ACCESS_TOKEN);
 
-        testedInstance.reply(inputPayload, FILE_ID, COMMENT_ID);
+        testedInstance.reply(payload);
 
         verify(postCommentService).postComment(FILE_ID, COMMENT_ID, MESSAGE, ACCESS_TOKEN);
     }

@@ -1,5 +1,7 @@
 package com.mattermost.integration.figma.subscribe;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFileDTO;
 import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFilesDTO;
 import com.mattermost.integration.figma.api.figma.file.service.FigmaFileService;
@@ -39,7 +41,6 @@ class SubscribeControllerTest {
     private static final String CLIENT_ID = "CLIENT_ID";
     private static final String CLIENT_SECRET = "CLIENT_SECRET";
     private static final String TEAM_ID = "TEAM_ID";
-    private static final String TEXT_SUBSCRIBED = "{\"text\":\"Subscribed\"}";
     private static final String NAME = "NAME";
     private static final String SUBSCRIBED = "{\"text\":\"This channel is already subscribed to updates about NAME\"}";
     private final String REFRESH_TOKEN = "REFRESH_TOKEN";
@@ -91,8 +92,14 @@ class SubscribeControllerTest {
     @Mock
     private FigmaProjectFileDTO figmaProjectFileDTO;
 
+    @Mock
+    private ObjectMapper mapper;
+
+    private final String payload = "";
+
     @BeforeEach
-    void setUp() {
+    void setUp() throws JsonProcessingException {
+        when(mapper.readValue(payload,InputPayload.class)).thenReturn(inputPayload);
         when(inputPayload.getContext()).thenReturn(context);
         when(inputPayload.getValues()).thenReturn(values);
         when(context.getOauth2()).thenReturn(oAuth2);
@@ -151,7 +158,7 @@ class SubscribeControllerTest {
     }
 
     @Test
-    public void shouldSubscribeToProject() {
+    public void shouldSubscribeToProject() throws JsonProcessingException {
         MMStaticSelectField file = new MMStaticSelectField();
         file.setValue(ALL_FILES);
         when(values.getFile()).thenReturn(file);
@@ -159,13 +166,13 @@ class SubscribeControllerTest {
         when(field.getLabel()).thenReturn("test");
         when(field.getValue()).thenReturn("test");
 
-        String actualResponse = (String) testedInstance.sendProjectFiles(inputPayload, TEAM_ID);
+        String actualResponse = (String) testedInstance.sendProjectFiles(payload, TEAM_ID);
 
         assertEquals("{\"text\":\"You’ve successfully subscribed null to test notifications\"}", actualResponse);
     }
 
     @Test
-    public void shouldCreateFilesForm() {
+    public void shouldCreateFilesForm() throws JsonProcessingException {
         when(values.getFile()).thenReturn(file);
         when(file.getValue()).thenReturn("test");
         when(figmaFileService.getProjectFiles(inputPayload)).thenReturn(figmaProjectFilesDTO);
@@ -176,25 +183,25 @@ class SubscribeControllerTest {
         when(projectDTO.getId()).thenReturn("test");
         when(projectDTO.getName()).thenReturn("test");
 
-        FormType formType = (FormType) testedInstance.sendProjectFileSelection(inputPayload, TEAM_ID);
+        FormType formType = (FormType) testedInstance.sendProjectFileSelection(payload, TEAM_ID);
 
         assertNotNull(formType);
     }
 
     @Test
-    public void shouldSubscribeToFile() {
+    public void shouldSubscribeToFile() throws JsonProcessingException {
         when(values.getFile()).thenReturn(file);
         when(file.getValue()).thenReturn(VALUE);
         when(values.getProject()).thenReturn(field);
         when(file.getLabel()).thenReturn("test");
 
-        String actual = (String) testedInstance.sendProjectFiles(inputPayload, TEAM_ID);
+        String actual = (String) testedInstance.sendProjectFiles(payload, TEAM_ID);
 
         assertEquals("{\"text\":\"You’ve successfully subscribed null to test notifications\"}", actual);
     }
 
     @Test
-    public void shouldReturnAlreadySubscribedMessage() {
+    public void shouldReturnAlreadySubscribedMessage() throws JsonProcessingException {
         when(values.getFile()).thenReturn(file);
         when(file.getValue()).thenReturn(VALUE);
 
@@ -202,20 +209,20 @@ class SubscribeControllerTest {
         when(fileInfo.getFileId()).thenReturn(VALUE);
         when(fileInfo.getFileName()).thenReturn(NAME);
 
-        String actual = (String) testedInstance.sendProjectFiles(inputPayload, TEAM_ID);
+        String actual = (String) testedInstance.sendProjectFiles(payload, TEAM_ID);
 
         assertEquals(SUBSCRIBED, actual);
     }
 
     @Test
-    public void shouldInvokeSendSubscriptionFilesToMMChannel() {
+    public void shouldInvokeSendSubscriptionFilesToMMChannel() throws JsonProcessingException {
         when(subscribeService.isBotExistsInTeam(inputPayload)).thenReturn(true);
         when(subscribeService.isBotExistsInChannel(inputPayload)).thenReturn(true);
         when(user.getRefreshToken()).thenReturn(REFRESH_TOKEN);
         when(oAuth2.getClientId()).thenReturn(CLIENT_ID);
         when(oAuth2.getClientSecret()).thenReturn(CLIENT_SECRET);
 
-        testedInstance.sendChannelSubscriptions(inputPayload);
+        testedInstance.sendChannelSubscriptions(payload);
 
         verify(subscribeService).sendSubscriptionFilesToMMChannel(inputPayload);
     }
@@ -225,14 +232,14 @@ class SubscribeControllerTest {
         when(subscribeService.isBotExistsInTeam(inputPayload)).thenReturn(true);
         when(subscribeService.isBotExistsInChannel(inputPayload)).thenReturn(false);
 
-        assertThrows(MMSubscriptionInChannelWithoutBotException.class, () -> testedInstance.sendChannelSubscriptions(inputPayload));
+        assertThrows(MMSubscriptionInChannelWithoutBotException.class, () -> testedInstance.sendChannelSubscriptions(payload));
     }
 
     @Test
     public void shouldThrowMMSubscriptionInTeamWithoutBotException() {
         when(subscribeService.isBotExistsInTeam(inputPayload)).thenReturn(false);
 
-        assertThrows(MMSubscriptionInChannelWithoutBotException.class, () -> testedInstance.sendChannelSubscriptions(inputPayload));
+        assertThrows(MMSubscriptionInChannelWithoutBotException.class, () -> testedInstance.sendChannelSubscriptions(payload));
     }
 
     @Test
@@ -240,6 +247,6 @@ class SubscribeControllerTest {
         when(subscribeService.isBotExistsInTeam(inputPayload)).thenReturn(true);
         when(subscribeService.isBotExistsInChannel(inputPayload)).thenReturn(true);
 
-        assertThrows(MMFigmaUserNotSavedException.class, () -> testedInstance.sendChannelSubscriptions(inputPayload));
+        assertThrows(MMFigmaUserNotSavedException.class, () -> testedInstance.sendChannelSubscriptions(payload));
     }
 }

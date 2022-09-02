@@ -28,7 +28,7 @@
 		<dependency>
 			<groupId>com.amazonaws.serverless</groupId>
 			<artifactId>aws-serverless-java-container-springboot2</artifactId>
-			<version>1.8</version>
+			<version>1.8.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>

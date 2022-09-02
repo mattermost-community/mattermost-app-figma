@@ -1,5 +1,7 @@
 package com.mattermost.integration.figma.webhook;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mattermost.integration.figma.api.figma.notification.service.FileNotificationService;
 import com.mattermost.integration.figma.input.figma.notification.FileCommentWebhookResponse;
 import com.mattermost.integration.figma.webhook.service.FileCommentService;
@@ -25,11 +27,17 @@ class WebhookControllerTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private FileCommentWebhookResponse response;
 
-    @Test
-    public void shouldDoNothingWhenTriggeredWithPingType() {
-        when(response.getValues().getData().getEventType()).thenReturn("PING");
+    @Mock
+    private ObjectMapper mapper;
 
-        testedInstance.comment(response);
+    private final String payload = "";
+
+    @Test
+    public void shouldDoNothingWhenTriggeredWithPingType() throws JsonProcessingException {
+        when(response.getValues().getData().getEventType()).thenReturn("PING");
+        when(mapper.readValue(payload, FileCommentWebhookResponse.class)).thenReturn(response);
+
+        testedInstance.comment(payload);
 
         verify(fileCommentService, never()).updateName(response);
         verify(fileNotificationService, never()).sendFileNotificationMessageToMM(response);
