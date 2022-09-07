@@ -21,19 +21,12 @@ public class BindingServiceImpl implements BindingService {
     private static final int FIRST_INSTANCE = 0;
 
     @Autowired
-    private MMUserService mmUserService;
-
-    @Autowired
     private BindingsProvider bindingsProvider;
 
     public BindingsDTO filterBindingsDependingOnUser(InputPayload payload) {
         BindingsDTO defaultBindings = bindingsProvider.createDefaultBindingsWithoutCommands();
 
-        String mmSiteUrl = payload.getContext().getMattermostSiteUrl();
-        String botAccessToken = payload.getContext().getBotAccessToken();
-
-        MMUser currentUser = mmUserService.getUserById(payload.getContext().getActingUser().getId(), mmSiteUrl, botAccessToken);
-        String userRoles = currentUser.getRoles();
+        String userRoles = payload.getContext().getActingUser().getRoles();
 
         User user = payload.getContext().getOauth2().getUser();
 
