@@ -72,6 +72,7 @@ public class BindingsProvider {
         expand.setOauth2App(ALL);
         expand.setChannel(ALL);
         expand.setOauth2User(ALL);
+        expand.setActingUser(ALL);
         expand.setActingUserAccessToken(ALL);
         listSubmit.setExpand(expand);
         return listSubmit;
@@ -91,6 +92,7 @@ public class BindingsProvider {
         Expand expand = new Expand();
         expand.setActingUserAccessToken(ALL);
         expand.setApp(ALL);
+        expand.setActingUser(ALL);
         expand.setOauth2User(ALL);
         expand.setChannel(ALL);
         expand.setOauth2App(ALL);
@@ -111,6 +113,7 @@ public class BindingsProvider {
         expand.setApp(ALL);
         expand.setOauth2App(ALL);
         expand.setOauth2User(ALL);
+        expand.setActingUser(ALL);
         expand.setActingUserAccessToken(ALL);
         submit.setExpand(expand);
         return submit;
@@ -125,6 +128,7 @@ public class BindingsProvider {
         submit.setPath("/".concat(CONFIGURE.getTitle()));
 
         Expand expand = new Expand();
+        expand.setActingUser(ALL);
         expand.setActingUserAccessToken(ALL);
 
         List<Field> fields = Arrays.asList(createSingleField("client_id"), createSingleField("client_secret"));

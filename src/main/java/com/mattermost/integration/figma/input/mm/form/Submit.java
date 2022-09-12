@@ -1,5 +1,6 @@
 package com.mattermost.integration.figma.input.mm.form;
 
+import com.mattermost.integration.figma.input.mm.binding.Expand;
 import lombok.Data;
 
 import java.util.Map;

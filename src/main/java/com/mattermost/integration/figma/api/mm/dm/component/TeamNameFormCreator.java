@@ -5,13 +5,13 @@ import com.mattermost.integration.figma.input.mm.form.*;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.mattermost.integration.figma.api.mm.dm.component.ExpandCreator.prepareExpand;
+
 @Component
 public class TeamNameFormCreator {
-    private final static String ALL = "all";
     private final static String CREATE_NEW_WEBHOOK = "new_webhook";
     private static final String FIELD_TYPE = "text";
     private static int FIRST_FIELD = 0;
@@ -59,7 +59,7 @@ public class TeamNameFormCreator {
 
     private Submit createProjectFilesSubmit() {
         Submit submit = createSubmit();
-        submit.setExpand(null);
+        submit.setExpand(prepareExpand());
         submit.setPath("/team/refresh");
         return submit;
     }
@@ -69,16 +69,6 @@ public class TeamNameFormCreator {
         submit.setPath("/team/subscribe");
         submit.setExpand(prepareExpand());
         return submit;
-    }
-
-    private Expand prepareExpand() {
-        Expand expand = new Expand();
-        expand.setActingUserAccessToken(ALL);
-        expand.setApp(ALL);
-        expand.setOauth2App(ALL);
-        expand.setOauth2User(ALL);
-        expand.setChannel(ALL);
-        return expand;
     }
 
     private List<Option> createOptions(List<TeamNameDto> teamNameDtos) {

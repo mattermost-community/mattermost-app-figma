@@ -2,6 +2,7 @@ package com.mattermost.integration.figma.api.mm.dm.component;
 
 import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFileDTO;
 import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
+import com.mattermost.integration.figma.input.mm.binding.Expand;
 import com.mattermost.integration.figma.input.mm.form.*;
 import org.springframework.stereotype.Component;
 
@@ -9,9 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.mattermost.integration.figma.api.mm.dm.component.ExpandCreator.prepareExpand;
+
 @Component
 public class ProjectFormReplyCreator {
-    private static final String ALL = "all";
 
     public FormType create(TeamProjectDTO teamProjectDTO, String teamId) {
         FormType.FormTypeBuilder builder = FormType.builder();
@@ -58,16 +60,6 @@ public class ProjectFormReplyCreator {
         submit.setPath(replyPath);
         submit.setExpand(prepareExpand());
         return submit;
-    }
-
-    private Expand prepareExpand() {
-        Expand expand = new Expand();
-        expand.setActingUserAccessToken(ALL);
-        expand.setApp(ALL);
-        expand.setOauth2App(ALL);
-        expand.setOauth2User(ALL);
-        expand.setChannel(ALL);
-        return expand;
     }
 
 

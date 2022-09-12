@@ -34,7 +34,8 @@
     "path": "/oauth2/complete",
     "expand": {
       "oauth2_app": "all",
-      "acting_user_access_token": "all"
+      "acting_user_access_token": "all",
+      "acting_user": "all"
     }
   },
   "http": {

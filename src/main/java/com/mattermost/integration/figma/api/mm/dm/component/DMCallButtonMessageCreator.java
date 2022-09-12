@@ -6,6 +6,7 @@ import com.mattermost.integration.figma.api.mm.dm.dto.ProjectSubscriptionMessage
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.api.mm.kv.dto.ProjectInfo;
 import com.mattermost.integration.figma.api.mm.user.MMUserService;
+import com.mattermost.integration.figma.input.mm.binding.Expand;
 import com.mattermost.integration.figma.input.mm.form.*;
 import com.mattermost.integration.figma.input.mm.user.MMUser;
 import com.mattermost.integration.figma.input.oauth.Context;
@@ -16,11 +17,12 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 
+import static com.mattermost.integration.figma.api.mm.dm.component.ExpandCreator.prepareExpand;
+
 @Component
 public class DMCallButtonMessageCreator {
     private static final String LOCATION = "delete_subscription_button";
     private static final String DELETE = "Delete";
-    private static final String ALL = "all";
     private static final String FILE_URL = "https://www.figma.com/file/%s";
     private static final String PROJECT_URL = "https://www.figma.com/files/project/%s";
 
@@ -138,15 +140,5 @@ public class DMCallButtonMessageCreator {
         call.setPath(String.format("/project/%s/remove", projectId));
         call.setExpand(prepareExpand());
         return call;
-    }
-
-    private Expand prepareExpand() {
-        Expand expand = new Expand();
-        expand.setActingUserAccessToken(ALL);
-        expand.setApp(ALL);
-        expand.setOauth2App(ALL);
-        expand.setOauth2User(ALL);
-        expand.setChannel(ALL);
-        return expand;
     }
 }

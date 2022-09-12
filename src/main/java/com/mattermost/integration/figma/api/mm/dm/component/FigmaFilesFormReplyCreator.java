@@ -2,11 +2,14 @@ package com.mattermost.integration.figma.api.mm.dm.component;
 
 import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFilesDTO;
 import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
+import com.mattermost.integration.figma.input.mm.binding.Expand;
 import com.mattermost.integration.figma.input.mm.form.*;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.mattermost.integration.figma.api.mm.dm.component.ExpandCreator.prepareExpand;
 
 public class FigmaFilesFormReplyCreator {
     private static final String ALL = "all";
@@ -49,14 +52,5 @@ public class FigmaFilesFormReplyCreator {
         return submit;
     }
 
-    private Expand prepareExpand() {
-        Expand expand = new Expand();
-        expand.setActingUserAccessToken(ALL);
-        expand.setApp(ALL);
-        expand.setOauth2App(ALL);
-        expand.setOauth2User(ALL);
-        expand.setChannel(ALL);
-        return expand;
-    }
 
 }

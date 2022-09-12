@@ -2,6 +2,7 @@ package com.mattermost.integration.figma.api.mm.dm.component;
 
 import com.mattermost.integration.figma.api.mm.dm.dto.DMMessageWithPropsFields;
 import com.mattermost.integration.figma.api.mm.dm.dto.DMMessageWithPropsPayload;
+import com.mattermost.integration.figma.input.mm.binding.Expand;
 import com.mattermost.integration.figma.input.mm.form.*;
 import org.springframework.stereotype.Component;
 
@@ -10,13 +11,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.mattermost.integration.figma.api.mm.dm.component.ExpandCreator.prepareExpand;
+
 @Component
 public class DMFormMessageCreator {
     private static final String LOCATION = "my_button";
     private static final String REPLY = "Reply";
     private static final String TITLE = "Reply to comment";
     private static final String REPLY_PATH = "/reply";
-    private static final String ALL = "all";
     private static final String FIELD_TYPE = "text";
     private static final String MESSAGE = "message";
     private static final String MESSAGE_LABEL = "Message";
@@ -48,7 +50,7 @@ public class DMFormMessageCreator {
 
     private AppBinding prepareSingleAppBinding(DMMessageWithPropsFields fields) {
         AppBinding appBinding = new AppBinding();
-        appBinding.setAppId(fields.getAppId());
+        appBinding.setAppId("figma");
         appBinding.setLabel(fields.getLabel());
         appBinding.setDescription(fields.getDescription());
         appBinding.setBindings(Collections.singletonList(prepareSingleBinding(fields)));
@@ -82,14 +84,6 @@ public class DMFormMessageCreator {
         return submit;
     }
 
-    private Expand prepareExpand() {
-        Expand expand = new Expand();
-        expand.setActingUserAccessToken(ALL);
-        expand.setApp(ALL);
-        expand.setOauth2App(ALL);
-        expand.setOauth2User(ALL);
-        return expand;
-    }
 
     private Field prepareSingleField(String name, String value, String label) {
         TextField.TextFieldBuilder<?, ?> builder = TextField.builder();
