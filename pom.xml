@@ -104,7 +104,7 @@
 				</build>
 			</profile>
 			<profile>
-				<id>zip</id>
+				<id>aws-bundle</id>
 				<build>
 					<plugins>
 						<plugin>
@@ -179,6 +179,7 @@
 									</goals>
 									<configuration>
 										<appendAssemblyId>false</appendAssemblyId>
+										<finalName>figma-aws-bundle</finalName>
 										<descriptors>
 											<descriptor>assembly.xml</descriptor>
 										</descriptors>

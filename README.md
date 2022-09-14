@@ -29,3 +29,13 @@ A Figma app for Mattermost.
    * https://forum.figma.com/t/suggestion-api-endpoint-for-team-id/3429
    * https://spectrum.chat/figma/general/how-to-get-team-id-and-project-id-for-api~191126f9-ec4f-4c4f-9964-766ae2b4916f
 2. Run command `/figma list`  for subscriptions in current channel
+
+
+### Building aws bundle
+
+In project root run command  `./mvnw clean install -Paws-bundle`
+
+Bundle `figma-aws-bundle.zip` will be inside `target` folder
+
+
+
