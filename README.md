@@ -37,5 +37,13 @@ In project root run command  `./mvnw clean install -Paws-bundle`
 
 Bundle `figma-aws-bundle.zip` will be inside `target` folder
 
+### Deploy aws bundle with appsctl
+https://developers.mattermost.com/integrate/apps/deploy/deploy-aws/
 
+`go run ./cmd/appsctl aws deploy -v figma-aws-bundle.zip`
 
+####Lambda configuration
+
+Increase RAM and timeout ( Lambda -> Configuration -> General Configuration) 
+
+Add environmental variable ENCRYPTION_KEY for data encryption in KV ( Lambda-> Configuration -> Environment variables)
