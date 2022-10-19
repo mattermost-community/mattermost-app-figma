@@ -235,6 +235,7 @@ public class SubscribeController {
     public String sendChannelSubscriptions(@RequestBody String requestString) throws JsonProcessingException {
 
         InputPayload request = mapper.readValue(requestString, InputPayload.class);
+        request.getContext().setAppId("figma");
 
         log.info("Get Subscriptions for channel: " + request.getContext().getChannel().getId() + " has come");
         log.debug("Get files request: " + request);

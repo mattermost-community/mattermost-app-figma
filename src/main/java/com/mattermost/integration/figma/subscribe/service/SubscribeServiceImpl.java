@@ -91,9 +91,9 @@ public class SubscribeServiceImpl implements SubscribeService {
             updateFiles(files, mattermostSiteUrl, botAccessToken);
         } catch (RestClientException e) {
             log.error(e.getMessage());
+        } finally {
             sendProjectAndFileSubscriptionsToMM(payload, projects, files);
         }
-        sendProjectAndFileSubscriptionsToMM(payload, projects, files);
     }
 
     @Override
