@@ -116,7 +116,7 @@ public class FileNotificationServiceImpl implements FileNotificationService {
             return Optional.empty();
         }
 
-        return  Optional.of(jsonUtils.convertStringToObject(stringResponseEntity.getBody(), Webhook.class).orElse(Optional.empty()));
+        return Optional.of(jsonUtils.convertStringToObject(stringResponseEntity.getBody(), Webhook.class).orElse(Optional.empty()));
     }
 
     public void sendFileNotificationMessageToMM(FileCommentWebhookResponse fileCommentWebhookResponse) {
@@ -124,11 +124,14 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         Context context = fileCommentWebhookResponse.getContext();
         String mattermostSiteUrl = context.getMattermostSiteUrl();
         String botAccessToken = context.getBotAccessToken();
-        String commenterTeamId = figmaWebhookService.getCurrentUserTeamId(figmaWebhookResponse.getWebhookId(),
+        Optional<String> commenterTeamId = figmaWebhookService.getCurrentUserTeamId(figmaWebhookResponse.getWebhookId(),
                 mattermostSiteUrl, botAccessToken);
+        if (commenterTeamId.isEmpty()) {
+            return;
+        }
         List<Mention> mentions = new ArrayList<>(figmaWebhookResponse.getMentions());
 
-        userDataKVService.saveUserToCertainTeam(commenterTeamId, figmaWebhookResponse.getTriggeredBy().getId(),
+        userDataKVService.saveUserToCertainTeam(commenterTeamId.get(), figmaWebhookResponse.getTriggeredBy().getId(),
                 mattermostSiteUrl, botAccessToken);
 
         String fileOwnerId = dmMessageSenderService.sendMessageToFileOwner(figmaWebhookResponse, context);
@@ -208,11 +211,17 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         Context context = fileCommentWebhookResponse.getContext();
         String mattermostSiteUrl = context.getMattermostSiteUrl();
         String botAccessToken = context.getBotAccessToken();
-        String commenterTeamId = figmaWebhookService.getCurrentUserTeamId(figmaData.getWebhookId(),
+        Optional<String> commenterTeamId = figmaWebhookService.getCurrentUserTeamId(figmaData.getWebhookId(),
                 mattermostSiteUrl, botAccessToken);
+
+        if (commenterTeamId.isEmpty()) {
+            log.debug(String.format("Team id for %s webhook was not found", figmaData.getWebhookId()));
+            return;
+        }
+
         String webhookOwnerId = kvService.get(WEBHOOK_ID_PREFIX.concat(figmaData.getWebhookId()), mattermostSiteUrl, botAccessToken);
 
-        Optional<TeamProjectDTO> teamProjects = figmaProjectService.getProjectsByTeamId(commenterTeamId, webhookOwnerId, mattermostSiteUrl, botAccessToken);
+        Optional<TeamProjectDTO> teamProjects = figmaProjectService.getProjectsByTeamId(commenterTeamId.get(), webhookOwnerId, mattermostSiteUrl, botAccessToken);
 
         if (teamProjects.isEmpty()) {
             return;

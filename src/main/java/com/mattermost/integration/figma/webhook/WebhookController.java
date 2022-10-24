@@ -43,7 +43,7 @@ public class WebhookController {
             log.debug(response.toString());
             return;
         }
-        log.debug("Received webhook from figma: " + response);
+        log.info("Received webhook from figma: " + response);
         fileCommentService.updateName(response);
         fileNotificationService.sendFileNotificationMessageToMMSubscribedChannels(response);
         fileNotificationService.sendFileNotificationMessageToMM(response);

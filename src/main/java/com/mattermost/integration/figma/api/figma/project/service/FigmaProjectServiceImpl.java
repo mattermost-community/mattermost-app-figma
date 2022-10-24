@@ -49,10 +49,16 @@ public class FigmaProjectServiceImpl implements FigmaProjectService {
 
         Context context = response.getContext();
         String mattermostSiteUrl = context.getMattermostSiteUrl();
-        String commenterTeamId = figmaWebhookService.getCurrentUserTeamId(figmaData.getWebhookId(),
+        Optional<String> commenterTeamId = figmaWebhookService.getCurrentUserTeamId(figmaData.getWebhookId(),
                 mattermostSiteUrl, botAccessToken);
+
+        if (commenterTeamId.isEmpty()) {
+            log.info(String.format("Team id for %s webhook was not found", figmaData.getWebhookId()));
+            return Optional.empty();
+        }
+
         String commenterId = figmaData.getTriggeredBy().getId();
-        return getProjectsByTeamId(commenterTeamId, commenterId, mattermostSiteUrl, botAccessToken);
+        return getProjectsByTeamId(commenterTeamId.get(), commenterId, mattermostSiteUrl, botAccessToken);
     }
 
     @Override

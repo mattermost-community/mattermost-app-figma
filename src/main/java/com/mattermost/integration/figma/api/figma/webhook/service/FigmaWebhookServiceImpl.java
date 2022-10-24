@@ -19,6 +19,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Optional;
+
 @Service
 @Slf4j
 public class FigmaWebhookServiceImpl implements FigmaWebhookService {
@@ -78,9 +80,15 @@ public class FigmaWebhookServiceImpl implements FigmaWebhookService {
     }
 
     @Override
-    public String getCurrentUserTeamId(String webhookId, String mmSiteUrl, String botAccessToken) {
+    public Optional<String> getCurrentUserTeamId(String webhookId, String mmSiteUrl, String botAccessToken) {
         String webhookOwnerId = kvService.get(WEBHOOK_ID_PREFIX.concat(webhookId), mmSiteUrl, botAccessToken);
-        String accessToken = getToken(userDataKVService.getUserData(webhookOwnerId, mmSiteUrl, botAccessToken).get());
+        Optional<UserDataDto> userData = userDataKVService.getUserData(webhookOwnerId, mmSiteUrl, botAccessToken);
+        return userData.map(userDataDto -> getWebhookTeamId(userDataDto, webhookId));
+
+    }
+
+    private String getWebhookTeamId(UserDataDto userData, String webhookId) {
+        String accessToken = getToken(userData);
         return getWebhookById(webhookId, accessToken).getTeamId();
     }
 

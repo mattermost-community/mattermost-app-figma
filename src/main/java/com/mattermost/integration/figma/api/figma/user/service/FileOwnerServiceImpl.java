@@ -47,8 +47,14 @@ public class FileOwnerServiceImpl implements FileOwnerService {
 
     @Override
     public String findFileOwnerId(String fileKey, String webhookId, String figmaUserId, String mmSiteUrl, String botAccessToken) {
-        String teamId = figmaWebhookService.getCurrentUserTeamId(webhookId, mmSiteUrl, botAccessToken);
-        Set<String> userIds = userDataKVService.getUserIdsByTeamId(teamId, mmSiteUrl, botAccessToken);
+        Optional<String> teamId = figmaWebhookService.getCurrentUserTeamId(webhookId, mmSiteUrl, botAccessToken);
+        if (teamId.isEmpty()) {
+            log.info(String.format("Team id for %s webhook was not found", webhookId));
+
+            return null;
+        }
+
+        Set<String> userIds = userDataKVService.getUserIdsByTeamId(teamId.get(), mmSiteUrl, botAccessToken);
         String fileOwnerId = checkIfSetContainsFileOwnerId(userIds, mmSiteUrl, botAccessToken, fileKey);
         if (Objects.isNull(fileOwnerId)) {
             Set<String> allUserIds = userDataKVService.getAllFigmaUserIds(mmSiteUrl, botAccessToken);
