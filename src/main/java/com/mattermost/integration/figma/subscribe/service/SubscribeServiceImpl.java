@@ -25,10 +25,12 @@ import com.mattermost.integration.figma.subscribe.service.dto.FileData;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -62,6 +64,9 @@ public class SubscribeServiceImpl implements SubscribeService {
 
     @Autowired
     private OAuthService oAuthService;
+
+    @Autowired
+    private MessageSource messageSource;
 
     @Override
     public void subscribeToFile(InputPayload payload) {
@@ -200,7 +205,10 @@ public class SubscribeServiceImpl implements SubscribeService {
             }
             Set<String> projectFilesIds = projectFiles.get().getFiles().stream().map(FigmaProjectFileDTO::getKey).collect(Collectors.toSet());
             if (projectFilesIds.contains(file.getValue())) {
-                throw new MMSubscriptionToFileInSubscribedProjectException(projectInfo.getName());
+                Locale locale = Locale.forLanguageTag(payload.getContext().getActingUser().getLocale());
+
+                String message = messageSource.getMessage("mm.subscription.to.file.in.subscribed.project.exception", null, locale);
+                throw new MMSubscriptionToFileInSubscribedProjectException(projectInfo.getName() , message);
             }
         }
     }

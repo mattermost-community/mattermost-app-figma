@@ -12,22 +12,27 @@ import com.mattermost.integration.figma.input.mm.user.MMUser;
 import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import static com.mattermost.integration.figma.api.mm.dm.component.ExpandCreator.prepareExpand;
 
 @Component
 public class DMCallButtonMessageCreator {
     private static final String LOCATION = "delete_subscription_button";
-    private static final String DELETE = "Delete";
     private static final String FILE_URL = "https://www.figma.com/file/%s";
     private static final String PROJECT_URL = "https://www.figma.com/files/project/%s";
 
     @Autowired
     private MMUserService mmUserService;
+
+    @Autowired
+    private MessageSource messageSource;
 
     public DMMessageWithPropsPayload createDMMessageWithPropsPayload(FileSubscriptionMessage fileSubscriptionMessage) {
 
@@ -88,9 +93,10 @@ public class DMCallButtonMessageCreator {
         appBinding.setLabel(label);
 
         MMUser user = mmUserService.getUserById(fileInfo.getUserId(), context.getMattermostSiteUrl(), context.getBotAccessToken());
-        String description = String.format("File subscription created by %s on %s", user.getUsername(), fileInfo.getCreatedAt().toString());
+        Locale locale = Locale.forLanguageTag(user.getLocale());
+        String description = messageSource.getMessage("mm.subscriptions.file.title", List.of(user.getUsername(), fileInfo.getCreatedAt().toString()).toArray(), locale);
         appBinding.setDescription(description);
-        appBinding.setBindings(Collections.singletonList(prepareSingleBinding(fileSubscriptionMessage)));
+        appBinding.setBindings(Collections.singletonList(prepareSingleBinding(fileSubscriptionMessage, locale)));
         return appBinding;
     }
 
@@ -106,23 +112,26 @@ public class DMCallButtonMessageCreator {
         appBinding.setLabel(label);
 
         MMUser user = mmUserService.getUserById(project.getUserId(), context.getMattermostSiteUrl(), context.getBotAccessToken());
-        String description = String.format("Project subscription created by %s on %s", user.getUsername(), project.getCreatedAt().toString());
+        Locale locale = Locale.forLanguageTag(user.getLocale());
+        String description = messageSource.getMessage("mm.subscriptions.project.title", List.of(user.getUsername(), project.getCreatedAt().toString()).toArray(), locale);
         appBinding.setDescription(description);
-        appBinding.setBindings(Collections.singletonList(prepareSingleBinding(projectSubscriptionMessage)));
+        appBinding.setBindings(Collections.singletonList(prepareSingleBinding(projectSubscriptionMessage, locale)));
         return appBinding;
     }
 
-    private Binding prepareSingleBinding(FileSubscriptionMessage fileSubscriptionMessage) {
+    private Binding prepareSingleBinding(FileSubscriptionMessage fileSubscriptionMessage, Locale locale) {
+        String label = messageSource.getMessage("mm.form.subscription.delete.label", null, locale);
         Binding binding = new Binding();
-        binding.setLabel(DELETE);
+        binding.setLabel(label);
         binding.setLocation(LOCATION);
         binding.setSubmit(prepareSingleCall(fileSubscriptionMessage.getFileInfo().getFileId()));
         return binding;
     }
 
-    private Binding prepareSingleBinding(ProjectSubscriptionMessage projectSubscriptionMessage) {
+    private Binding prepareSingleBinding(ProjectSubscriptionMessage projectSubscriptionMessage, Locale locale) {
+        String label = messageSource.getMessage("mm.form.subscription.delete.label", null, locale);
         Binding binding = new Binding();
-        binding.setLabel(DELETE);
+        binding.setLabel(label);
         binding.setLocation(LOCATION);
         binding.setSubmit(prepareSingleCallForProject(projectSubscriptionMessage.getProjectInfo().getProjectId()));
         return binding;

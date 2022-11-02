@@ -11,10 +11,12 @@ import com.mattermost.integration.figma.security.service.OAuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Locale;
 import java.util.Objects;
 
 @RestController
@@ -30,6 +32,9 @@ public class OAuthController {
     @Autowired
     private ObjectMapper mapper;
 
+    @Autowired
+    private MessageSource messageSource;
+
     @PostMapping("/oauth2/connect")
     public String getOauthForm(@RequestBody String payloadString) throws JsonProcessingException {
         log.debug(payloadString);
@@ -38,7 +43,9 @@ public class OAuthController {
 
         if (!hasFigmaCredsStored(payload)) {
             log.error("Figma credentials were not stored:" + payload);
-            throw new MMFigmaCredsNotSavedException();
+            Locale locale = Locale.forLanguageTag(payload.getContext().getActingUser().getLocale());
+            String message = messageSource.getMessage("mm.creds.not.saved.exception", null, locale);
+            throw new MMFigmaCredsNotSavedException(message);
         }
 
         String url = oAuthService.generateUrl(payload);
@@ -58,7 +65,10 @@ public class OAuthController {
         userDataKVService.changeUserConnectionStatus(payload.getContext().getActingUser().getId(), true,
                 payload.getContext().getMattermostSiteUrl(), payload.getContext().getBotAccessToken());
 
-        return "{\"type\":\"ok\",\"text\":\"You have successfully connected your Figma account. Type in /figma to get started .\"}";
+        Locale locale = Locale.forLanguageTag(payload.getContext().getActingUser().getLocale());
+        String message = messageSource.getMessage("oauth2.complete", null, locale);
+
+        return String.format("{\"type\":\"ok\",\"text\":\"%s\"}", message);
     }
 
     @PostMapping("/configure")
@@ -66,8 +76,13 @@ public class OAuthController {
         log.debug(payloadString);
         InputPayload payload = mapper.readValue(payloadString, InputPayload.class);
 
+
         oAuthService.storeOAuthCreds(payload);
-        return "{\"text\":\"saved\"}";
+
+        Locale locale = Locale.forLanguageTag(payload.getContext().getActingUser().getLocale());
+        String message = messageSource.getMessage("oauth2.configure", null, locale);
+
+        return String.format("{\"text\":\"%s\"}", message);
     }
 
     @PostMapping("/connect")
@@ -78,7 +93,11 @@ public class OAuthController {
 
         String url = oAuthService.getConnectUrl(payload);
 
-        return String.format("{\"type\":\"ok\",\"text\":\"[Connect](%s) to Figma.\"}", url);
+        Locale locale = Locale.forLanguageTag(payload.getContext().getActingUser().getLocale());
+        String message = messageSource.getMessage("oauth2.connect", null, locale);
+
+
+        return String.format("{\"type\":\"ok\",\"text\":\"%s\"}", String.format(message, url));
     }
 
     @PostMapping("/disconnect")
@@ -93,7 +112,10 @@ public class OAuthController {
         userDataKVService.changeUserConnectionStatus(payload.getContext().getActingUser().getId(), false,
                 payload.getContext().getMattermostSiteUrl(), payload.getContext().getBotAccessToken());
 
-        return "{\"type\":\"ok\",\"text\":\"You have successfully disconnected your account from Figma\"}";
+        Locale locale = Locale.forLanguageTag(payload.getContext().getActingUser().getLocale());
+        String message = messageSource.getMessage("oauth2.disconnect", null, locale);
+
+        return String.format("{\"type\":\"ok\",\"text\":\"%s\"}", message);
     }
 
     private boolean hasFigmaCredsStored(InputPayload payload) {

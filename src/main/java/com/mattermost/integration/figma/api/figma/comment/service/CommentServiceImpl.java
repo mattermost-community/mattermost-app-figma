@@ -4,7 +4,9 @@ import com.mattermost.integration.figma.api.figma.comment.dto.PostCommentRequest
 import com.mattermost.integration.figma.config.exception.exceptions.figma.FigmaReplyErrorException;
 import com.mattermost.integration.figma.input.figma.notification.CommentDto;
 import com.mattermost.integration.figma.input.figma.notification.CommentResponseDto;
+import com.mattermost.integration.figma.input.oauth.InputPayload;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -12,6 +14,7 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -21,6 +24,9 @@ public class CommentServiceImpl implements CommentService {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired
+    private MessageSource messageSource;
 
     @Override
     public List<CommentDto> getCommentsFromFile(String fileKey, String figmaToken) {
@@ -40,8 +46,14 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public void postComment(String fileId, String replyCommentId, String message, String token) {
+    public void postComment(InputPayload payload, String token) {
+
+        String fileId = payload.getState().getFileId();
+        String replyCommentId = payload.getState().getCommentId();
+        String message = payload.getValues().getMessage();
         String url = String.format(GET_COMMENTS_URL, fileId);
+        Locale locale = Locale.forLanguageTag(payload.getContext().getActingUser().getLocale());
+
 
         PostCommentRequestDTO postCommentRequestDTO = new PostCommentRequestDTO();
         postCommentRequestDTO.setCommentId(replyCommentId);
@@ -54,7 +66,8 @@ public class CommentServiceImpl implements CommentService {
         try {
             restTemplate.postForEntity(url, request, String.class);
         } catch (final HttpServerErrorException | HttpClientErrorException e) {
-            throw new FigmaReplyErrorException("This comment is unavailable.");
+            String errorMessage = messageSource.getMessage("figma.reply.exception", null, locale);
+            throw new FigmaReplyErrorException(errorMessage);
         }
     }
 }

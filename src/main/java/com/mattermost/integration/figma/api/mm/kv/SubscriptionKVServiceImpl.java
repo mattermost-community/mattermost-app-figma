@@ -3,8 +3,6 @@ package com.mattermost.integration.figma.api.mm.kv;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.api.mm.kv.dto.ProjectInfo;
-import com.mattermost.integration.figma.config.exception.exceptions.mm.MMFileInfoNotFoundException;
-import com.mattermost.integration.figma.config.exception.exceptions.mm.MMProjectInfoNotFoundException;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.subscribe.service.dto.FileData;
 import com.mattermost.integration.figma.utils.json.JsonUtils;
@@ -81,7 +79,7 @@ public class SubscriptionKVServiceImpl implements SubscriptionKVService {
         Set<String> fileIds = (Set<String>) jsonUtils.convertStringToObject(mmChanelSubscribedFiles, new TypeReference<Set<String>>() {
         }).orElse(new HashSet<String>());
 
-        return fileIds.stream().map(id -> getFile(mattermostSiteUrl, token, id).orElseThrow(() -> new MMFileInfoNotFoundException(id))).collect(Collectors.toSet());
+        return fileIds.stream().map(id -> getFile(mattermostSiteUrl, token, id)).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet());
     }
 
 
@@ -118,7 +116,7 @@ public class SubscriptionKVServiceImpl implements SubscriptionKVService {
     public Set<ProjectInfo> getProjectsByMMChannelId(String channelId, String mattermostSiteUrl, String token) {
         Set<String> projectIds = getProjectIdsByChannelId(channelId, mattermostSiteUrl, token);
         return projectIds.stream().map(projectId -> getProjectById(projectId, mattermostSiteUrl, token)
-                .orElseThrow(() -> new MMProjectInfoNotFoundException(projectId))).collect(Collectors.toSet());
+        ).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet());
     }
 
     @Override

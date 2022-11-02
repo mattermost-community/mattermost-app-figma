@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.MessageSource;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -31,6 +32,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -95,17 +97,26 @@ class SubscribeControllerTest {
     @Mock
     private ObjectMapper mapper;
 
+    @Mock
+    private MessageSource messageSource;
+
+    @Mock
+    private ActingUser actingUser;
+
     private final String payload = "";
 
     @BeforeEach
     void setUp() throws JsonProcessingException {
-        when(mapper.readValue(payload,InputPayload.class)).thenReturn(inputPayload);
+        when(mapper.readValue(payload, InputPayload.class)).thenReturn(inputPayload);
         when(inputPayload.getContext()).thenReturn(context);
         when(inputPayload.getValues()).thenReturn(values);
         when(context.getOauth2()).thenReturn(oAuth2);
         when(oAuth2.getUser()).thenReturn(user);
 
         when(context.getChannel()).thenReturn(channel);
+
+        when(context.getActingUser()).thenReturn(actingUser);
+        when(actingUser.getLocale()).thenReturn("en");
 
     }
 
@@ -128,7 +139,8 @@ class SubscribeControllerTest {
     @Test
     public void shouldThrowMMSubscriptionFromDMChannelExceptionWhenChannelIsDM() {
         when(channel.getType()).thenReturn(DM_CHANNEL);
-
+        when(context.getActingUser()).thenReturn(actingUser);
+        when(actingUser.getLocale()).thenReturn("en");
         assertThrows(MMSubscriptionFromDMChannelException.class, () -> testedInstance.subscribe(inputPayload));
     }
 
@@ -146,7 +158,7 @@ class SubscribeControllerTest {
 
         testedInstance.subscribe(inputPayload);
 
-        verify(userService).addUserToChannel(any(),any(),any(),any());
+        verify(userService).addUserToChannel(any(), any(), any(), any());
     }
 
     @Test
@@ -165,10 +177,11 @@ class SubscribeControllerTest {
         when(values.getProject()).thenReturn(field);
         when(field.getLabel()).thenReturn("test");
         when(field.getValue()).thenReturn("test");
+        when(messageSource.getMessage(anyString(), any(), any())).thenReturn("You have successfully subscribed %s to %s notifications");
 
         String actualResponse = (String) testedInstance.sendProjectFiles(payload, TEAM_ID);
 
-        assertEquals("{\"text\":\"You’ve successfully subscribed null to test notifications\"}", actualResponse);
+        assertEquals("{\"text\":\"You have successfully subscribed null to test notifications\"}", actualResponse);
     }
 
     @Test
@@ -194,10 +207,11 @@ class SubscribeControllerTest {
         when(file.getValue()).thenReturn(VALUE);
         when(values.getProject()).thenReturn(field);
         when(file.getLabel()).thenReturn("test");
+        when(messageSource.getMessage(any(), any(), any())).thenReturn("You have successfully subscribed %s to %s notifications");
 
         String actual = (String) testedInstance.sendProjectFiles(payload, TEAM_ID);
 
-        assertEquals("{\"text\":\"You’ve successfully subscribed null to test notifications\"}", actual);
+        assertEquals("{\"text\":\"You have successfully subscribed null to test notifications\"}", actual);
     }
 
     @Test
@@ -208,6 +222,7 @@ class SubscribeControllerTest {
         when(subscribeService.getFilesByChannelId(inputPayload)).thenReturn(Collections.singleton(fileInfo));
         when(fileInfo.getFileId()).thenReturn(VALUE);
         when(fileInfo.getFileName()).thenReturn(NAME);
+        when(messageSource.getMessage(any(), any(), any())).thenReturn("This channel is already subscribed to updates about %s");
 
         String actual = (String) testedInstance.sendProjectFiles(payload, TEAM_ID);
 

@@ -4,10 +4,13 @@ import com.mattermost.integration.figma.api.figma.file.dto.FigmaProjectFileDTO;
 import com.mattermost.integration.figma.api.figma.project.dto.TeamProjectDTO;
 import com.mattermost.integration.figma.input.mm.binding.Expand;
 import com.mattermost.integration.figma.input.mm.form.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import static com.mattermost.integration.figma.api.mm.dm.component.ExpandCreator.prepareExpand;
@@ -15,17 +18,25 @@ import static com.mattermost.integration.figma.api.mm.dm.component.ExpandCreator
 @Component
 public class ProjectFormReplyCreator {
 
-    public FormType create(TeamProjectDTO teamProjectDTO, String teamId) {
+    private MessageSource messageSource;
+
+    public ProjectFormReplyCreator(MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
+
+    public FormType create(TeamProjectDTO teamProjectDTO, String teamId, Locale locale) {
         FormType.FormTypeBuilder builder = FormType.builder();
         builder.type("form");
-        builder.form(createForm(teamProjectDTO, teamId));
+        builder.form(createForm(teamProjectDTO, teamId, locale));
         return builder.build();
     }
 
-    private Form createForm(TeamProjectDTO teamProjectDTO, String teamId) {
+    private Form createForm(TeamProjectDTO teamProjectDTO, String teamId, Locale locale) {
         Form.FormBuilder<?, ?> builder = Form.builder();
-        builder.fields(createField(teamProjectDTO));
-        builder.title("Figma team projects");
+        builder.fields(createField(teamProjectDTO, locale));
+        String title = messageSource.getMessage("mm.form.subscribe.team.projects.title", null, locale);
+
+        builder.title(title);
         builder.submit(createSubmit(teamId));
         builder.source(createProjectFilesSubmit(teamId));
         return builder.build();
@@ -37,12 +48,13 @@ public class ProjectFormReplyCreator {
         return submit;
     }
 
-    private List<Field> createField(TeamProjectDTO teamProjectDTO) {
+    private List<Field> createField(TeamProjectDTO teamProjectDTO, Locale locale) {
+        String label = messageSource.getMessage("mm.form.subscribe.team.projects.project.label", null, locale);
         StaticSelectField.StaticSelectFieldBuilder<?, ?> builder = StaticSelectField.builder();
         builder.name("project_id");
         builder.type("static_select");
         builder.isRequired(true);
-        builder.label("Project");
+        builder.label(label);
         builder.refresh(true);
         builder.options(createOptions(teamProjectDTO));
         List<Field> fields = new ArrayList<>();
@@ -63,7 +75,8 @@ public class ProjectFormReplyCreator {
     }
 
 
-    public void addFilesToForm(List<FigmaProjectFileDTO> files, FormType form, String projectName, String projectId) {
+    public void addFilesToForm(List<FigmaProjectFileDTO> files, FormType form, String projectName, String projectId, Locale locale) {
+        String label = messageSource.getMessage("mm.form.subscribe.team.projects.file.label", null, locale);
         Value.ValueBuilder projectValueBuilder = Value.builder();
         projectValueBuilder.label(projectName);
         projectValueBuilder.value(projectId);
@@ -77,15 +90,16 @@ public class ProjectFormReplyCreator {
         builder.name("file_id");
         builder.type("static_select");
         builder.isRequired(true);
-        builder.label("File");
-        builder.options(createFileOptions(files));
+        builder.label(label);
+        builder.options(createFileOptions(files, locale));
         builder.objectValue(fileValueBuilder.build());
         form.getForm().getFields().add(builder.build());
     }
 
-    private List<Option> createFileOptions(List<FigmaProjectFileDTO> files) {
+    private List<Option> createFileOptions(List<FigmaProjectFileDTO> files, Locale locale) {
+        String label = messageSource.getMessage("mm.form.subscribe.team.project.files.label", null, locale);
         List<Option> fileOptions = files.stream().map(f -> Option.builder().label(f.getName()).value(f.getKey()).build()).collect(Collectors.toList());
-        fileOptions.add(0, Option.builder().label("All files").value("all_files").build());
+        fileOptions.add(0, Option.builder().label(label).value("all_files").build());
         return fileOptions;
     }
 

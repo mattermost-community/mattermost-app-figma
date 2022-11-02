@@ -2,10 +2,13 @@ package com.mattermost.integration.figma.api.mm.dm.component;
 
 import com.mattermost.integration.figma.api.figma.team.dto.TeamNameDto;
 import com.mattermost.integration.figma.input.mm.form.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import static com.mattermost.integration.figma.api.mm.dm.component.ExpandCreator.prepareExpand;
@@ -16,34 +19,43 @@ public class TeamNameFormCreator {
     private static final String FIELD_TYPE = "text";
     private static int FIRST_FIELD = 0;
 
-    public FormType createTeamSubscribeForm(List<TeamNameDto> teamNameDtos) {
+    @Autowired
+    private MessageSource messageSource;
+
+    public FormType createTeamSubscribeForm(List<TeamNameDto> teamNameDtos, Locale locale) {
         FormType.FormTypeBuilder builder = FormType.builder();
         builder.type("form");
-        builder.form(createForm(teamNameDtos));
+        builder.form(createForm(teamNameDtos, locale));
         return builder.build();
     }
 
-    private Form createForm(List<TeamNameDto> teamNameDtos) {
+    private Form createForm(List<TeamNameDto> teamNameDtos, Locale locale) {
+        String title = messageSource.getMessage("mm.form.subscribe.notifications.title", null, locale);
         Form form = new Form();
-        form.setTitle("Subscribe to Figma Notifications");
-        form.setFields(createFields(teamNameDtos));
+        form.setTitle(title);
+        form.setFields(createFields(teamNameDtos, locale));
         form.setSubmit(createSubmit());
         form.setSource(createProjectFilesSubmit());
         return form;
     }
 
-    private List<Field> createFields(List<TeamNameDto> teamNameDtos) {
+    private List<Field> createFields(List<TeamNameDto> teamNameDtos, Locale locale) {
+        String label = messageSource.getMessage("mm.form.subscribe.notifications.field.team.name.label", null, locale);
+
         StaticSelectField.StaticSelectFieldBuilder<?, ?> builder = StaticSelectField.builder();
-        builder.options(createOptions(teamNameDtos));
-        builder.objectValue(Value.builder().value(CREATE_NEW_WEBHOOK).label("Create new team webhook").build());
+        builder.options(createOptions(teamNameDtos, locale));
+        String webhookLabel = messageSource.getMessage("mm.form.subscribe.notifications.field.new.webhook.label", null, locale);
+
+        builder.objectValue(Value.builder().value(CREATE_NEW_WEBHOOK).label(webhookLabel).build());
         builder.refresh(true);
         builder.isRequired(true);
         builder.name("team_name");
-        builder.label("Team name");
+        builder.label(label);
         builder.type("static_select");
         List<Field> fields = new ArrayList<>();
         fields.add(builder.build());
-        fields.add(prepareSingleTextField("team_id", "", "Team id"));
+        String teamIdLabel = messageSource.getMessage("mm.form.subscribe.notifications.field.team.id.label", null, locale);
+        fields.add(prepareSingleTextField("team_id", "", teamIdLabel));
         return fields;
     }
 
@@ -71,12 +83,14 @@ public class TeamNameFormCreator {
         return submit;
     }
 
-    private List<Option> createOptions(List<TeamNameDto> teamNameDtos) {
+    private List<Option> createOptions(List<TeamNameDto> teamNameDtos, Locale locale) {
+        String withId = messageSource.getMessage("mm.form.subscribe.notifications.with.id", null, locale);
         List<Option> options = teamNameDtos.stream().map(teamNameDto ->
-                Option.builder().label(teamNameDto.getTeamName().concat(" with id ".concat(teamNameDto.getTeamId())))
-                        .value(teamNameDto.getTeamId()).build())
+                        Option.builder().label(String.format("%s %s %s", teamNameDto.getTeamName(), withId, teamNameDto.getTeamId())
+                        ).value(teamNameDto.getTeamId()).build())
                 .collect(Collectors.toList());
-        options.add(0, Option.builder().label("Create new team webhook").value(CREATE_NEW_WEBHOOK).build());
+        String label = messageSource.getMessage("mm.form.subscribe.notifications.field.new.webhook.label", null, locale);
+        options.add(0, Option.builder().label(label).value(CREATE_NEW_WEBHOOK).build());
         return options;
     }
 

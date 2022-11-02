@@ -34,8 +34,11 @@ public class TeamNameServiceImpl implements TeamNameService {
     }
 
     private Set<String> getAllDistinctTeamIds(String mmSiteUrl, String botAccessToken) {
-        return (Set<String>) jsonUtils.convertStringToObject(kvService.get(ALL_TEAMS, mmSiteUrl,
-                botAccessToken), new TypeReference<Set<String>>() {
+        String ids = kvService.get(ALL_TEAMS, mmSiteUrl, botAccessToken);
+        if (StringUtils.isBlank(ids)) {
+            return new HashSet<>();
+        }
+        return (Set<String>) jsonUtils.convertStringToObject(ids, new TypeReference<Set<String>>() {
         }).orElse(new HashSet<String>());
     }
 

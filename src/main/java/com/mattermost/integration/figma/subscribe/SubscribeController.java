@@ -30,15 +30,11 @@ import com.mattermost.integration.figma.subscribe.service.SubscribeService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.context.MessageSource;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @RestController
 @Slf4j
@@ -61,6 +57,8 @@ public class SubscribeController {
     private TeamNameFormCreator teamNameFormCreator;
     @Autowired
     private ObjectMapper mapper;
+    @Autowired
+    private MessageSource messageSource;
 
     private final String ALL_FILES = "all_files";
     private final static String CREATE_NEW_WEBHOOK = "new_webhook";
@@ -72,11 +70,13 @@ public class SubscribeController {
         log.debug(requestString);
 
         InputPayload request = mapper.readValue(requestString, InputPayload.class);
+        Locale locale = Locale.forLanguageTag(request.getContext().getActingUser().getLocale());
+
 
         String mmSiteUrl = request.getContext().getMattermostSiteUrl();
         String botAccessToken = request.getContext().getBotAccessToken();
         List<TeamNameDto> allTeamNames = teamNameService.getAllTeamNames(request.getContext().getActingUser().getId(), mmSiteUrl, botAccessToken);
-        return teamNameFormCreator.createTeamSubscribeForm(allTeamNames);
+        return teamNameFormCreator.createTeamSubscribeForm(allTeamNames, locale);
     }
 
     @PostMapping("team/refresh")
@@ -85,12 +85,14 @@ public class SubscribeController {
         log.debug(requestString);
 
         InputPayload request = mapper.readValue(requestString, InputPayload.class);
+        Locale locale = Locale.forLanguageTag(request.getContext().getActingUser().getLocale());
+
 
         String mmSiteUrl = request.getContext().getMattermostSiteUrl();
         String botAccessToken = request.getContext().getBotAccessToken();
         List<TeamNameDto> allTeamNames = teamNameService.getAllTeamNames(request.getContext().getActingUser().getId(), mmSiteUrl, botAccessToken);
         MMStaticSelectField teamNameField = request.getValues().getTeamName();
-        FormType teamSubscribeForm = teamNameFormCreator.createTeamSubscribeForm(allTeamNames);
+        FormType teamSubscribeForm = teamNameFormCreator.createTeamSubscribeForm(allTeamNames, locale);
         teamNameFormCreator.modifyFormFirstField(teamSubscribeForm, teamNameField.getLabel(), teamNameField.getValue());
         if (CREATE_NEW_WEBHOOK.equals(teamNameField.getValue())) {
             return teamSubscribeForm;
@@ -105,11 +107,14 @@ public class SubscribeController {
         log.debug(requestString);
 
         InputPayload request = mapper.readValue(requestString, InputPayload.class);
+        Locale locale = Locale.forLanguageTag(request.getContext().getActingUser().getLocale());
 
         MMStaticSelectField teamNameField = request.getValues().getTeamName();
         if (CREATE_NEW_WEBHOOK.equals(teamNameField.getValue())) {
             if (Objects.isNull(request.getValues().getTeamId())) {
-                throw new MMFieldLoadException("team id");
+                String label = messageSource.getMessage("mm.form.subscribe.notifications.field.team.id.label", null, locale);
+                String message = messageSource.getMessage("mm.field.load.exception", Collections.singletonList(label).toArray(), locale);
+                throw new MMFieldLoadException(message);
             }
             return subscribe(request);
         }
@@ -119,9 +124,12 @@ public class SubscribeController {
 
     public FormType subscribe(InputPayload request) {
         log.debug(request.toString());
+        Locale locale = Locale.forLanguageTag(request.getContext().getActingUser().getLocale());
+
         if ("D".equalsIgnoreCase(request.getContext().getChannel().getType())) {
             log.error("Subscription from DM channel:" + request);
-            throw new MMSubscriptionFromDMChannelException();
+            String message = messageSource.getMessage("mm.message.dm.subscription.exception", null, locale);
+            throw new MMSubscriptionFromDMChannelException(message);
         }
 
         if (!subscribeService.isBotExistsInTeam(request)) {
@@ -145,7 +153,8 @@ public class SubscribeController {
 
         if (!isFigmaUserStored(request)) {
             log.error("Figma user was not stored:" + request);
-            throw new MMFigmaUserNotSavedException();
+            String message = messageSource.getMessage("mm.message.slash.command.exception", null, locale);
+            throw new MMFigmaUserNotSavedException(message);
         }
 
         System.out.println(request);
@@ -155,13 +164,14 @@ public class SubscribeController {
         TeamProjectDTO projects = figmaProjectService.getProjectsByTeamId(request);
 
         if (projects.getProjects().isEmpty()) {
-            throw new FigmaNoProjectsInTeamSubscriptionException();
+            String message = messageSource.getMessage("figma.no.project.in.team.subscription.exception", null, locale);
+            throw new FigmaNoProjectsInTeamSubscriptionException(message);
         }
 
         String teamId = request.getValues().getTeamId();
-        ProjectFormReplyCreator projectFormReplyCreator = new ProjectFormReplyCreator();
+        ProjectFormReplyCreator projectFormReplyCreator = new ProjectFormReplyCreator(messageSource);
 
-        return projectFormReplyCreator.create(projects, teamId);
+        return projectFormReplyCreator.create(projects, teamId, locale);
     }
 
     @PostMapping("{teamId}/projects")
@@ -169,9 +179,12 @@ public class SubscribeController {
 
         log.debug(requestString);
         InputPayload request = mapper.readValue(requestString, InputPayload.class);
+        Locale locale = Locale.forLanguageTag(request.getContext().getActingUser().getLocale());
 
         if (Objects.isNull(request.getValues().getFile())) {
-            throw new MMFieldLoadException("file");
+            String label = messageSource.getMessage("mm.form.subscribe.team.projects.file.label", null, locale);
+            String message = messageSource.getMessage("mm.field.load.exception", Collections.singletonList(label).toArray(), locale);
+            throw new MMFieldLoadException(message);
         }
         if (ALL_FILES.equals(request.getValues().getFile().getValue())) {
             request.getValues().setTeamId(teamId);
@@ -179,8 +192,8 @@ public class SubscribeController {
             userDataKVService.saveUserData(request);
             subscribeService.subscribeToProject(request);
             String projectName = request.getValues().getProject().getLabel();
-            return String.format("{\"text\":\"You’ve successfully subscribed %s to %s notifications\"}",
-                    request.getContext().getChannel().getDisplayName(), projectName);
+            String message = String.format(messageSource.getMessage("mm.subscription.success", null, locale), request.getContext().getChannel().getDisplayName(), projectName);
+            return String.format("{\"text\":\"%s\"}", message);
         }
 
         return sendProjectFile(request, teamId);
@@ -194,18 +207,21 @@ public class SubscribeController {
         InputPayload request = mapper.readValue(requestString, InputPayload.class);
 
         FigmaProjectFilesDTO projectFiles = figmaFileService.getProjectFiles(request);
+        Locale locale = Locale.forLanguageTag(request.getContext().getActingUser().getLocale());
+
 
         if (projectFiles.getFiles().isEmpty()) {
-            throw new FigmaNoFilesInProjectSubscriptionException();
+            String message = messageSource.getMessage("figma.no.files.in.project.subscription.exception", null, locale);
+            throw new FigmaNoFilesInProjectSubscriptionException(message);
         }
 
         request.getValues().setTeamId(teamId);
         TeamProjectDTO projects = figmaProjectService.getProjectsByTeamId(request);
 
-        ProjectFormReplyCreator projectFormReplyCreator = new ProjectFormReplyCreator();
+        ProjectFormReplyCreator projectFormReplyCreator = new ProjectFormReplyCreator(messageSource);
         MMStaticSelectField project = request.getValues().getProject();
-        FormType formType = projectFormReplyCreator.create(projects, teamId);
-        projectFormReplyCreator.addFilesToForm(projectFiles.getFiles(), formType, project.getLabel(), project.getValue());
+        FormType formType = projectFormReplyCreator.create(projects, teamId, locale);
+        projectFormReplyCreator.addFilesToForm(projectFiles.getFiles(), formType, project.getLabel(), project.getValue(), locale);
         return formType;
     }
 
@@ -215,20 +231,24 @@ public class SubscribeController {
         request.getValues().setTeamId(teamId);
         log.info("Get files: " + request.getValues().getFile().getValue() + " has come");
         log.debug("Get files request: " + request);
+        Locale locale = Locale.forLanguageTag(request.getContext().getActingUser().getLocale());
+
 
         Set<FileInfo> filesByChannelId = subscribeService.getFilesByChannelId(request);
         Optional<FileInfo> file = filesByChannelId.stream().filter(f -> fileKey.equals(f.getFileId())).findAny();
 
         if (file.isPresent()) {
-            return String.format("{\"text\":\"This channel is already subscribed to updates about %s\"}", file.get().getFileName());
+            String message = String.format(messageSource.getMessage("mm.already.subscribed.exception", null, locale), file.get().getFileName());
+            return String.format("{\"text\":\"%s\"}", message);
         }
 
         fileNotificationService.createTeamWebhook(request);
         userDataKVService.saveUserData(request);
         subscribeService.subscribeToFile(request);
         String fileName = request.getValues().getFile().getLabel();
-        return String.format("{\"text\":\"You’ve successfully subscribed %s to %s notifications\"}",
-                request.getContext().getChannel().getDisplayName(), fileName);
+
+        String message = String.format(messageSource.getMessage("mm.subscription.success", null, locale), request.getContext().getChannel().getDisplayName(), fileName);
+        return String.format("{\"text\":\"%s\"}", message);
     }
 
     @PostMapping("/subscriptions")
@@ -240,18 +260,22 @@ public class SubscribeController {
         log.info("Get Subscriptions for channel: " + request.getContext().getChannel().getId() + " has come");
         log.debug("Get files request: " + request);
 
+        Locale locale = Locale.forLanguageTag(request.getContext().getActingUser().getLocale());
 
         if (!subscribeService.isBotExistsInTeam(request)) {
-            throw new MMSubscriptionInChannelWithoutBotException("Please add Figma bot to this team");
+            String message = messageSource.getMessage("mm.message.bot.add.to.team.exception", null, locale);
+            throw new MMSubscriptionInChannelWithoutBotException(message);
         }
 
         if (!subscribeService.isBotExistsInChannel(request)) {
-            throw new MMSubscriptionInChannelWithoutBotException("Please add Figma bot to this channel");
+            String message = messageSource.getMessage("mm.message.bot.add.to.channel.exception", null, locale);
+            throw new MMSubscriptionInChannelWithoutBotException(message);
         }
 
         if (!isFigmaUserStored(request)) {
             log.error("Figma user was not stored:" + request);
-            throw new MMFigmaUserNotSavedException();
+            String message = messageSource.getMessage("mm.message.slash.command.exception", null, locale);
+            throw new MMFigmaUserNotSavedException(message);
         }
 
         subscribeService.sendSubscriptionFilesToMMChannel(request);
@@ -263,7 +287,10 @@ public class SubscribeController {
         log.debug(requestString);
         InputPayload request = mapper.readValue(requestString, InputPayload.class);
         subscribeService.unsubscribeFromFile(request, fileId);
-        return "{\"text\":\"Unsubscribed\"}";
+        Locale locale = Locale.forLanguageTag(request.getContext().getActingUser().getLocale());
+        String message = messageSource.getMessage("mm.message.unsubscribe", null, locale);
+
+        return String.format("{\"text\":\"%s\"}", message);
     }
 
     @PostMapping("/project/{projectId}/remove")
@@ -274,7 +301,10 @@ public class SubscribeController {
         InputPayload request = mapper.readValue(requestString, InputPayload.class);
 
         subscribeService.unsubscribeFromProject(request, projectId);
-        return "{\"text\":\"Unsubscribed\"}";
+        Locale locale = Locale.forLanguageTag(request.getContext().getActingUser().getLocale());
+        String message = messageSource.getMessage("mm.message.unsubscribe", null, locale);
+
+        return String.format("{\"text\":\"%s\"}", message);
     }
 
 

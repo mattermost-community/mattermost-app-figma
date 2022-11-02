@@ -20,6 +20,7 @@ import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.security.service.OAuthService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -33,10 +34,10 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
 
     private static final String FILE_URL = "https://www.figma.com/file/%s";
     private static final String UNTITLED = "Untitled";
-    private static final String REPLY_NOTIFICATION_ROOT = "replied to you on";
+    private static final String REPLY_NOTIFICATION_ROOT = "figma.webhook.reply.notification.root.label";
     private static final String AUTHOR_ID_MATCHED_COMMENTER_ID = "";
     private static final String FILE_OWNER_ID_MATCHED_COMMENTER_ID = "";
-    private static final String COMMENTED_IN_YOUR_FILE = "commented in your file";
+    private static final String COMMENTED_IN_YOUR_FILE = "figma.webhook.reply.notification.commented.in.your.file.label";
     private static final String COMMENTED_IN_FILE = "commented in file";
 
     @Autowired
@@ -57,6 +58,8 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
     private DMCallButtonMessageCreator messageCreator;
     @Autowired
     private KVService kvService;
+    @Autowired
+    private MessageSource messageSource;
 
 
     public String sendMessageToCommentAuthor(FigmaWebhookResponse figmaWebhookResponse, Context context, String fileOwnerId) {
@@ -78,8 +81,12 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
                 return StringUtils.EMPTY;
             }
 
-            if (currentUserData.get().isConnected()) {
-                sendMessageToSpecificReceiver(context, currentUserData.get(), figmaWebhookResponse, REPLY_NOTIFICATION_ROOT);
+            UserDataDto userDataDto = currentUserData.get();
+            if (userDataDto.isConnected()) {
+                MMUser user = mmUserService.getUserById(userDataDto.getMmUserId(), context.getMattermostSiteUrl(), context.getBotAccessToken());
+                Locale locale = Locale.forLanguageTag(user.getLocale());
+                String message = messageSource.getMessage(REPLY_NOTIFICATION_ROOT, null, locale);
+                sendMessageToSpecificReceiver(context, userDataDto, figmaWebhookResponse, message);
                 return comment.getUser().getId();
             }
         }
@@ -92,12 +99,19 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
                 context.getMattermostSiteUrl(), context.getBotAccessToken());
         if (!figmaWebhookResponse.getTriggeredBy().getId().equals(fileOwnerId)) {
             Optional<UserDataDto> fileOwnerData = userDataKVService.getUserData(fileOwnerId, context.getMattermostSiteUrl(), context.getBotAccessToken());
-            if (fileOwnerData.get().isConnected()) {
-                sendMessageToSpecificReceiver(context, fileOwnerData.get(), figmaWebhookResponse, COMMENTED_IN_YOUR_FILE);
-            }
+            fileOwnerData.ifPresent(userDataDto -> sendMessageToSpecificReceiver(figmaWebhookResponse, context, userDataDto));
             return fileOwnerId;
         }
         return FILE_OWNER_ID_MATCHED_COMMENTER_ID;
+    }
+
+    private void sendMessageToSpecificReceiver(FigmaWebhookResponse figmaWebhookResponse, Context context, UserDataDto fileOwnerData) {
+        if (fileOwnerData.isConnected()) {
+            MMUser user = mmUserService.getUserById(fileOwnerData.getMmUserId(), context.getMattermostSiteUrl(), context.getBotAccessToken());
+            Locale locale = Locale.forLanguageTag(user.getLocale());
+            String message = messageSource.getMessage(COMMENTED_IN_YOUR_FILE, null, locale);
+            sendMessageToSpecificReceiver(context, fileOwnerData, figmaWebhookResponse, message);
+        }
     }
 
     @Override
@@ -141,8 +155,8 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
             return;
         }
 
-        DMMessageWithPropsPayload dmMessageWithPropsPayload = formMessageCreator.createDMMessageWithPropsPayload(messageWithPropsFields.get(), webhookResponse.getContext().getBotAccessToken(),
-                webhookResponse.getContext().getMattermostSiteUrl());
+        DMMessageWithPropsPayload dmMessageWithPropsPayload = formMessageCreator.createMessageWithPropsPayload(messageWithPropsFields.get(), webhookResponse.getContext().getBotAccessToken(),
+                webhookResponse.getContext().getMattermostSiteUrl(), Locale.US);
 
         messageService.sendDMMessage(dmMessageWithPropsPayload);
 
@@ -172,8 +186,13 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
         if (messageWithPropsFields.isEmpty()) {
             return;
         }
-        messageService.sendDMMessage(formMessageCreator.createDMMessageWithPropsPayload(messageWithPropsFields.get(), context.getBotAccessToken(),
-                context.getMattermostSiteUrl()));
+        String botAccessToken = context.getBotAccessToken();
+        String mattermostSiteUrl = context.getMattermostSiteUrl();
+        MMUser user = mmUserService.getUserById(specificUserData.getMmUserId(), mattermostSiteUrl, botAccessToken);
+
+        Locale locale = Locale.forLanguageTag(user.getLocale());
+        messageService.sendDMMessage(formMessageCreator.createMessageWithPropsPayload(messageWithPropsFields.get(), botAccessToken,
+                mattermostSiteUrl, locale));
     }
 
     private String getAccessTokenByWebhookId(String webhookId, String mmSiteUrl, String botAccessToken) {
@@ -259,6 +278,7 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
 
         return stringBuilder.toString();
     }
+
     private String prepareSingleMention(Mention currentMention, List<MMUser> mmUsers, String mmSiteUrl, String token) {
         Optional<UserDataDto> userData = userDataKVService.getUserData(currentMention.getId(), mmSiteUrl, token);
         if (userData.isPresent()) {

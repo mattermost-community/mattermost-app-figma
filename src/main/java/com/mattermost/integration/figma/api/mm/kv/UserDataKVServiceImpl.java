@@ -173,8 +173,13 @@ public class UserDataKVServiceImpl implements UserDataKVService {
     }
 
     private Set<String> getSetFromKV(String key, String mmSiteUrl, String botAccessToken) {
-        return (Set<String>) jsonUtils.convertStringToObject(kvService.get(key, mmSiteUrl,
-                botAccessToken), new TypeReference<Set<String>>() {
+        String s = kvService.get(key, mmSiteUrl, botAccessToken);
+
+        if (StringUtils.isBlank(s)) {
+            return null;
+
+        }
+        return (Set<String>) jsonUtils.convertStringToObject(s, new TypeReference<Set<String>>() {
         }).orElse(null);
     }
 }

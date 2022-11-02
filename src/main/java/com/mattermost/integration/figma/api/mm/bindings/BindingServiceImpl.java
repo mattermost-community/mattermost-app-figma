@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
 import java.util.Objects;
 
 @Service
@@ -24,31 +25,22 @@ public class BindingServiceImpl implements BindingService {
     private BindingsProvider bindingsProvider;
 
     public BindingsDTO filterBindingsDependingOnUser(InputPayload payload) {
+        Locale locale = Locale.forLanguageTag(payload.getContext().getActingUser().getLocale());
         BindingsDTO defaultBindings = bindingsProvider.createDefaultBindingsWithoutCommands();
-
         String userRoles = payload.getContext().getActingUser().getRoles();
-
         User user = payload.getContext().getOauth2().getUser();
 
         if (userRoles.contains(ADMIN_ROLE)) {
-            addCommandToBindings(defaultBindings, bindingsProvider.createConfigureBinding());
+            addCommandToBindings(defaultBindings, bindingsProvider.createConfigureBinding(locale));
         }
 
-        if (Objects.isNull(user)) {
+        if (Objects.isNull(user) || Objects.isNull(user.getUserId())) {
             addCommandToBindings(defaultBindings, bindingsProvider.createConnectBinding());
-            return defaultBindings;
-        }
+        } else {
+            if ((userRoles.contains(TEAM_ADMIN) || userRoles.contains(CHANNEL_ADMIN) || userRoles.contains(ADMIN_ROLE))) {
+                addCommandToBindings(defaultBindings, bindingsProvider.createSubscribeBinding(locale));
+            }
 
-        if (Objects.nonNull(user.getUserId()) &&
-                (userRoles.contains(TEAM_ADMIN) || userRoles.contains(CHANNEL_ADMIN) || userRoles.contains(ADMIN_ROLE))) {
-            addCommandToBindings(defaultBindings, bindingsProvider.createSubscribeBinding());
-        }
-
-        if (Objects.isNull(user.getUserId())) {
-            addCommandToBindings(defaultBindings, bindingsProvider.createConnectBinding());
-        }
-
-        else {
             addCommandToBindings(defaultBindings, bindingsProvider.createListBinding());
             addCommandToBindings(defaultBindings, bindingsProvider.createDisconnectBinding());
         }

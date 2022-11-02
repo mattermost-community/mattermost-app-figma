@@ -10,11 +10,13 @@ import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.input.oauth.OAuth2;
 import com.mattermost.integration.figma.security.dto.FigmaTokenDTO;
 import com.mattermost.integration.figma.security.service.OAuthService;
+import jdk.jfr.MemoryAddress;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.MessageSource;
 import org.springframework.test.context.TestPropertySource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,6 +51,10 @@ class OAuthControllerTest {
     private FigmaTokenDTO figmaTokenDTO;
     @Mock
     private UserDataKVService userDataKVService;
+    @Mock
+    private ActingUser actingUser;
+    @Mock
+    private MessageSource messageSource;
 
     private final String payloadString = "";
 
@@ -58,6 +64,9 @@ class OAuthControllerTest {
         when(objectMapper.readValue(payloadString, InputPayload.class)).thenReturn(inputPayload);
         when(inputPayload.getContext()).thenReturn(context);
         when(context.getOauth2()).thenReturn(oAuth2);
+        when(context.getActingUser()).thenReturn(actingUser);
+        when(actingUser.getLocale()).thenReturn("en");
+
     }
 
     @Test
@@ -91,6 +100,7 @@ class OAuthControllerTest {
     @Test
     void shouldReturnConnectUrl() throws JsonProcessingException {
         when(oAuthService.getConnectUrl(inputPayload)).thenReturn(URL);
+        when(messageSource.getMessage(any(),any(),any())).thenReturn("[Connect](%s) to Figma.");
 
         String connectUrl = testedInstance.connect(payloadString);
 
@@ -102,6 +112,7 @@ class OAuthControllerTest {
         String testString = "1";
         ActingUser actingUser = new ActingUser();
         actingUser.setId(testString);
+        actingUser.setLocale("en");
 
         when(context.getActingUser()).thenReturn(actingUser);
         when(context.getMattermostSiteUrl()).thenReturn(testString);

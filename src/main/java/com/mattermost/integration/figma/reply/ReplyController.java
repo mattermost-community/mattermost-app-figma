@@ -32,16 +32,12 @@ public class ReplyController {
 
         InputPayload payload = mapper.readValue(payloadString, InputPayload.class);
 
-        String fileId = payload.getState().getFileId();
-        String commentId = payload.getState().getCommentId();
-        String message = payload.getValues().getMessage();
-
         String clientId = payload.getContext().getOauth2().getClientId();
         String clientSecret = payload.getContext().getOauth2().getClientSecret();
 
         String refreshToken = payload.getContext().getOauth2().getUser().getRefreshToken();
         FigmaOAuthRefreshTokenResponseDTO token = oAuthService.refreshToken(clientId, clientSecret, refreshToken);
-        postCommentService.postComment(fileId, commentId, message, token.getAccessToken());
+        postCommentService.postComment(payload, token.getAccessToken());
 
         return "{\"type\":\"ok\"}";
     }

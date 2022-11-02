@@ -1,12 +1,12 @@
 package com.mattermost.integration.figma.api.mm.bindings;
 
 import com.mattermost.integration.figma.input.mm.binding.*;
+import com.mattermost.integration.figma.input.oauth.InputPayload;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static com.mattermost.integration.figma.input.mm.binding.Command.*;
 
@@ -18,6 +18,9 @@ public class BindingsProvider {
     private static final String ICON = "icon.png";
     private static final String ALL = "all";
     private static final String FIELD_TEXT_TYPE = "text";
+
+    @Autowired
+    private MessageSource messageSource;
 
     public BindingsDTO createDefaultBindingsWithoutCommands() {
         BindingsDTO bindingsDTO = new BindingsDTO();
@@ -44,8 +47,8 @@ public class BindingsProvider {
         return bindings;
     }
 
-    public Binding createConfigureBinding() {
-        return createBaseCommand(CONFIGURE.getTitle(), createConfigureForm(), null);
+    public Binding createConfigureBinding(Locale locale) {
+        return createBaseCommand(CONFIGURE.getTitle(), createConfigureForm(locale), null);
     }
 
     public Binding createConnectBinding() {
@@ -56,8 +59,8 @@ public class BindingsProvider {
         return createBaseCommand(DISCONNECT.getTitle(), null, createDisconnectSubmit());
     }
 
-    public Binding createSubscribeBinding() {
-        return createBaseCommand(SUBSCRIBE.getTitle(), createSubscribeForm(), null);
+    public Binding createSubscribeBinding(Locale locale) {
+        return createBaseCommand(SUBSCRIBE.getTitle(), createSubscribeForm(locale), null);
     }
 
     public Binding createListBinding() {
@@ -78,9 +81,10 @@ public class BindingsProvider {
         return listSubmit;
     }
 
-    private Form createSubscribeForm() {
+    private Form createSubscribeForm(Locale locale) {
         Form subscribeForm = new Form();
-        subscribeForm.setTitle("Figma notifications");
+        String title = messageSource.getMessage("mm.form.subscribe.title", null, locale);
+        subscribeForm.setTitle(title);
         subscribeForm.setIcon(ICON);
         subscribeForm.setSubmit(createSubscribeSubmit());
         return subscribeForm;
@@ -119,10 +123,11 @@ public class BindingsProvider {
         return submit;
     }
 
-    private Form createConfigureForm() {
+    private Form createConfigureForm(Locale locale) {
         Form configureForm = new Form();
         configureForm.setIcon(ICON);
-        configureForm.setTitle("Connect Figma to Mattermost");
+        String title = messageSource.getMessage("mm.form.configure.title", null, locale);
+        configureForm.setTitle(title);
 
         Submit submit = new Submit();
         submit.setPath("/".concat(CONFIGURE.getTitle()));
