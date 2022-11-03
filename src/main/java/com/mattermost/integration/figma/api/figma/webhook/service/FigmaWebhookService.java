@@ -10,7 +10,7 @@ public interface FigmaWebhookService {
 
     void deleteWebhook(String webhookId, String figmaToken);
 
-    Webhook getWebhookById(String webhookId, String figmaToken);
+    Optional<Webhook> getWebhookById(String webhookId, String figmaToken);
 
     Optional<String> getCurrentUserTeamId(String webhookId, String mmSiteUrl, String botAccessToken);
 }

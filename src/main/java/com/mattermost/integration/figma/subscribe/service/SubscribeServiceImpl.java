@@ -208,7 +208,7 @@ public class SubscribeServiceImpl implements SubscribeService {
                 Locale locale = Locale.forLanguageTag(payload.getContext().getActingUser().getLocale());
 
                 String message = messageSource.getMessage("mm.subscription.to.file.in.subscribed.project.exception", null, locale);
-                throw new MMSubscriptionToFileInSubscribedProjectException(projectInfo.getName() , message);
+                throw new MMSubscriptionToFileInSubscribedProjectException(projectInfo.getName(), message);
             }
         }
     }
@@ -216,7 +216,7 @@ public class SubscribeServiceImpl implements SubscribeService {
     private void updateProjects(Set<ProjectInfo> projects, String mmSiteUrl, String botAccessToken) {
         for (ProjectInfo project : projects) {
 
-            Optional<TeamProjectDTO> projectsByTeamIdOptional = figmaProjectService.getProjectsByTeamId(project.getTeamId(),
+            Optional<TeamProjectDTO> projectsByTeamIdOptional = figmaProjectService.getProjectsByTeamIdWithCustomRestTemplate(project.getTeamId(),
                     project.getFigmaUserId(), mmSiteUrl, botAccessToken);
 
             if (projectsByTeamIdOptional.isEmpty()) {
@@ -243,9 +243,11 @@ public class SubscribeServiceImpl implements SubscribeService {
 
             UserDataDto userDataDto = userDataOptional.get();
             String accessToken = oAuthService.refreshToken(userDataDto.getClientId(), userDataDto.getClientSecret(), userDataDto.getRefreshToken()).getAccessToken();
-            FigmaProjectFileDTO upToDateFile = figmaFileService.getFileByKey(fileInfo.getFileId(), accessToken);
-            subscriptionKVService.updateFileName(upToDateFile.getName(), upToDateFile.getKey(), mmSiteUrl, botAccessToken);
-            fileInfo.setFileName(upToDateFile.getName());
+            Optional<FigmaProjectFileDTO> upToDateFile = figmaFileService.getFileByKey(fileInfo.getFileId(), accessToken);
+            upToDateFile.ifPresent(f -> {
+                subscriptionKVService.updateFileName(f.getName(), f.getKey(), mmSiteUrl, botAccessToken);
+                fileInfo.setFileName(f.getName());
+            });
         }
     }
 

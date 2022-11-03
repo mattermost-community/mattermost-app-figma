@@ -6,6 +6,7 @@ import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.UserDataDto;
 import com.mattermost.integration.figma.security.service.OAuthService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
@@ -18,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class FigmaFileServiceImpl implements FigmaFileService {
 
     private static final String FILES_URL = "https://api.figma.com/v1/projects/%s/files";
@@ -70,7 +72,7 @@ public class FigmaFileServiceImpl implements FigmaFileService {
 
 
     @Override
-    public FigmaProjectFileDTO getFileByKey(String fileKey, String accessToken) {
+    public Optional<FigmaProjectFileDTO> getFileByKey(String fileKey, String accessToken) {
         String url = String.format(GET_FILE_URL, fileKey);
 
         HttpHeaders headers = new HttpHeaders();
@@ -78,7 +80,13 @@ public class FigmaFileServiceImpl implements FigmaFileService {
         headers.set("Authorization", String.format("Bearer %s", accessToken));
         HttpEntity<Object> request = new HttpEntity<>(headers);
 
-        ResponseEntity<FigmaProjectFileDTO> resp = restTemplate.exchange(url, HttpMethod.GET, request, FigmaProjectFileDTO.class);
-        return resp.getBody();
+        try {
+            ResponseEntity<FigmaProjectFileDTO> resp = restTemplate.exchange(url, HttpMethod.GET, request, FigmaProjectFileDTO.class);
+            return Optional.of(resp.getBody());
+        } catch (Exception e) {
+            log.error(String.format("file with key %s was not found", fileKey));
+            return Optional.empty();
+        }
+
     }
 }

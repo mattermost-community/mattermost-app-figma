@@ -31,8 +31,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.*;
 
@@ -256,11 +258,17 @@ public class SubscribeController {
 
         InputPayload request = mapper.readValue(requestString, InputPayload.class);
         request.getContext().setAppId("figma");
+        Locale locale = Locale.forLanguageTag(request.getContext().getActingUser().getLocale());
+
+
+        if ("D".equalsIgnoreCase(request.getContext().getChannel().getType())) {
+            log.error("Getting Subscription from DM channel:" + request);
+            String message = messageSource.getMessage("mm.message.dm.subscription.list.exception", null, locale);
+            throw new MMSubscriptionFromDMChannelException(message);
+        }
 
         log.info("Get Subscriptions for channel: " + request.getContext().getChannel().getId() + " has come");
         log.debug("Get files request: " + request);
-
-        Locale locale = Locale.forLanguageTag(request.getContext().getActingUser().getLocale());
 
         if (!subscribeService.isBotExistsInTeam(request)) {
             String message = messageSource.getMessage("mm.message.bot.add.to.team.exception", null, locale);

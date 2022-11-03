@@ -24,9 +24,6 @@ public class TeamNameParallelSearchServiceImpl implements TeamNameParallelSearch
     private FigmaProjectService figmaProjectService;
 
     @Autowired
-    private RestTemplate restTemplate;
-
-    @Autowired
     private UserDataKVService userDataKVService;
 
     @Autowired
@@ -47,7 +44,7 @@ public class TeamNameParallelSearchServiceImpl implements TeamNameParallelSearch
         ForkJoinPool customThreadPool = new ForkJoinPool(DEFAULT_THREAD_QUANTITY);
         try {
             return customThreadPool.submit(() -> teamNameDtos.parallelStream().peek(dto -> {
-                Optional<TeamProjectDTO> projectsByTeamId = figmaProjectService.getProjectsByTeamIdWithCustomRestTemplate(dto.getTeamId(), accessToken, restTemplate);
+                Optional<TeamProjectDTO> projectsByTeamId = figmaProjectService.getProjectsByTeamIdWithCustomRestTemplate(dto.getTeamId(), accessToken);
                 projectsByTeamId.ifPresent(teamProjectDTO -> dto.setTeamName(teamProjectDTO.getName()));
             }).filter(dto -> Objects.nonNull(dto.getTeamName())).collect(Collectors.toList())).get();
         } catch (InterruptedException | ExecutionException e) {

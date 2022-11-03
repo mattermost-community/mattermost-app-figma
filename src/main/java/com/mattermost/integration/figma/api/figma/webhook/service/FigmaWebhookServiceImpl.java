@@ -10,10 +10,7 @@ import com.mattermost.integration.figma.security.service.OAuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -62,12 +59,16 @@ public class FigmaWebhookServiceImpl implements FigmaWebhookService {
         HttpEntity<Object> request = new HttpEntity<>(headers);
         String url = FIGMA_WEBHOOK_URL.concat("/").concat(webhookId);
 
-        restTemplate.exchange(url, HttpMethod.DELETE, request, String.class);
-        log.info("Successfully deleted webhook with id: " + webhookId);
+        ResponseEntity<String> exchange = restTemplate.exchange(url, HttpMethod.DELETE, request, String.class);
+        if (exchange.getStatusCode().value() == HttpStatus.OK.value()) {
+            log.info("Successfully deleted webhook with id: " + webhookId);
+        } else {
+            log.error("Webhook was not deleted with id: " + webhookId);
+        }
     }
 
     @Override
-    public Webhook getWebhookById(String webhookId, String figmaToken) {
+    public Optional<Webhook> getWebhookById(String webhookId, String figmaToken) {
         String url = FIGMA_WEBHOOK_URL.concat("/").concat(webhookId);
 
         HttpHeaders headers = new HttpHeaders();
@@ -75,21 +76,27 @@ public class FigmaWebhookServiceImpl implements FigmaWebhookService {
         headers.set("Authorization", String.format("Bearer %s", figmaToken));
         HttpEntity<Object> request = new HttpEntity<>(headers);
 
-        ResponseEntity<Webhook> resp = restTemplate.exchange(url, HttpMethod.GET, request, Webhook.class);
-        return resp.getBody();
+        try {
+            ResponseEntity<Webhook> resp = restTemplate.exchange(url, HttpMethod.GET, request, Webhook.class);
+            return Optional.of(resp.getBody());
+        } catch (Exception e) {
+            log.info(String.format("Webhook with id %s was not found", webhookId));
+            return Optional.empty();
+        }
     }
 
     @Override
     public Optional<String> getCurrentUserTeamId(String webhookId, String mmSiteUrl, String botAccessToken) {
         String webhookOwnerId = kvService.get(WEBHOOK_ID_PREFIX.concat(webhookId), mmSiteUrl, botAccessToken);
         Optional<UserDataDto> userData = userDataKVService.getUserData(webhookOwnerId, mmSiteUrl, botAccessToken);
-        return userData.map(userDataDto -> getWebhookTeamId(userDataDto, webhookId));
+        return userData.flatMap(userDataDto -> getWebhookTeamId(userDataDto, webhookId));
 
     }
 
-    private String getWebhookTeamId(UserDataDto userData, String webhookId) {
+    private Optional<String> getWebhookTeamId(UserDataDto userData, String webhookId) {
         String accessToken = getToken(userData);
-        return getWebhookById(webhookId, accessToken).getTeamId();
+        Optional<Webhook> webhook = getWebhookById(webhookId, accessToken);
+        return webhook.map(Webhook::getTeamId);
     }
 
     private String getToken(UserDataDto userDataDto) {

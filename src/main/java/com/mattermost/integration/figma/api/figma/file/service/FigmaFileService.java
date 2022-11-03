@@ -12,5 +12,5 @@ public interface FigmaFileService {
 
     Optional<FigmaProjectFilesDTO> getProjectFiles(String projectId, String figmaUserId, String mmUserId, String botAccessToken);
 
-    FigmaProjectFileDTO getFileByKey(String fileKey, String accessToken);
+    Optional<FigmaProjectFileDTO> getFileByKey(String fileKey, String accessToken);
 }

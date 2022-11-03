@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.LocaleResolver;
@@ -26,6 +27,7 @@ public class FigmaConfiguration {
     private String encryptionKey;
 
     @Bean
+    @Primary
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
@@ -41,7 +43,7 @@ public class FigmaConfiguration {
     }
 
     @Bean
-    public SecretKeySpec generateKey() throws UnsupportedEncodingException, NoSuchAlgorithmException {
+    public SecretKeySpec generateKey() throws NoSuchAlgorithmException {
         byte[] key = encryptionKey.getBytes(StandardCharsets.UTF_8);
         MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
         key = messageDigest.digest(key);
@@ -51,16 +53,15 @@ public class FigmaConfiguration {
 
     //configuring default locale
     @Bean
-    public LocaleResolver localeResolver()
-    {
+    public LocaleResolver localeResolver() {
         SessionLocaleResolver localeResolver = new SessionLocaleResolver();
         localeResolver.setDefaultLocale(Locale.US);
         return localeResolver;
     }
+
     //configuring ResourceBundle
     @Bean
-    public ResourceBundleMessageSource messageSource()
-    {
+    public ResourceBundleMessageSource messageSource() {
         ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
         messageSource.setBasename("messages");
         messageSource.setDefaultEncoding("UTF-8");

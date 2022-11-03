@@ -5,7 +5,6 @@ import com.mattermost.integration.figma.api.figma.webhook.service.FigmaWebhookSe
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.input.figma.notification.FigmaWebhookResponse;
 import com.mattermost.integration.figma.input.figma.notification.FileCommentWebhookResponse;
-import com.mattermost.integration.figma.input.mm.form.Option;
 import com.mattermost.integration.figma.input.oauth.Context;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.security.dto.UserDataDto;
@@ -31,6 +30,9 @@ public class FigmaProjectServiceImpl implements FigmaProjectService {
     @Autowired
     @Qualifier("figmaRestTemplate")
     private RestTemplate restTemplate;
+
+    @Autowired
+    private RestTemplate defaultRestTemplate;
 
     @Autowired
     private OAuthService oAuthService;
@@ -73,6 +75,7 @@ public class FigmaProjectServiceImpl implements FigmaProjectService {
         return sendGetProjectRequest(teamId, accessToken);
     }
 
+
     @Override
     public Optional<TeamProjectDTO> getProjectsByTeamId(String teamId, String figmaUserId, String mmSiteUrl, String botAccessToken) {
         Optional<UserDataDto> userDataOptional = userDataKVService.getUserData(figmaUserId, mmSiteUrl, botAccessToken);
@@ -86,6 +89,18 @@ public class FigmaProjectServiceImpl implements FigmaProjectService {
         return Optional.of(sendGetProjectRequest(teamId, accessToken));
     }
 
+    public Optional<TeamProjectDTO> getProjectsByTeamIdWithCustomRestTemplate(String teamId, String figmaUserId, String mmSiteUrl, String botAccessToken) {
+        Optional<UserDataDto> userDataOptional = userDataKVService.getUserData(figmaUserId, mmSiteUrl, botAccessToken);
+
+        if (userDataOptional.isEmpty()) {
+            return Optional.empty();
+        }
+        UserDataDto userData = userDataOptional.get();
+        String accessToken = oAuthService.refreshToken(userData.getClientId(), userData.getClientSecret(),
+                userData.getRefreshToken()).getAccessToken();
+        return getProjectsByTeamIdWithCustomRestTemplate(teamId, accessToken);
+    }
+
     private TeamProjectDTO sendGetProjectRequest(String teamId, String accessToken) {
         String url = String.format(PROJECT_BY_TEAM_URL, teamId);
         HttpHeaders headers = new HttpHeaders();
@@ -97,8 +112,7 @@ public class FigmaProjectServiceImpl implements FigmaProjectService {
         return resp.getBody();
     }
 
-    public Optional<TeamProjectDTO> getProjectsByTeamIdWithCustomRestTemplate(String teamId, String accessToken,
-                                                                              RestTemplate restTemplate) {
+    public Optional<TeamProjectDTO> getProjectsByTeamIdWithCustomRestTemplate(String teamId, String accessToken) {
 
         String url = String.format(PROJECT_BY_TEAM_URL, teamId);
         HttpHeaders headers = new HttpHeaders();
@@ -107,7 +121,7 @@ public class FigmaProjectServiceImpl implements FigmaProjectService {
         HttpEntity<Object> request = new HttpEntity<>(headers);
 
         try {
-            ResponseEntity<TeamProjectDTO> resp = restTemplate.exchange(url, HttpMethod.GET, request, TeamProjectDTO.class);
+            ResponseEntity<TeamProjectDTO> resp = defaultRestTemplate.exchange(url, HttpMethod.GET, request, TeamProjectDTO.class);
             return Optional.of(resp.getBody());
         } catch (Exception e) {
             log.error(e.getMessage());
