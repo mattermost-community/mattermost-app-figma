@@ -36,14 +36,22 @@ public class BindingServiceImpl implements BindingService {
 
         if (Objects.isNull(user) || Objects.isNull(user.getUserId())) {
             addCommandToBindings(defaultBindings, bindingsProvider.createConnectBinding());
-        } else {
-            if ((userRoles.contains(TEAM_ADMIN) || userRoles.contains(CHANNEL_ADMIN) || userRoles.contains(ADMIN_ROLE))) {
-                addCommandToBindings(defaultBindings, bindingsProvider.createSubscribeBinding(locale));
-            }
-
-            addCommandToBindings(defaultBindings, bindingsProvider.createListBinding());
-            addCommandToBindings(defaultBindings, bindingsProvider.createDisconnectBinding());
+            return defaultBindings;
         }
+
+        addCommandToBindings(defaultBindings, bindingsProvider.createDisconnectBinding());
+
+        if ("D".equalsIgnoreCase(payload.getContext().getChannel().getType())) {
+            return defaultBindings;
+        }
+
+
+        if ((userRoles.contains(TEAM_ADMIN) || userRoles.contains(CHANNEL_ADMIN) || userRoles.contains(ADMIN_ROLE))) {
+            addCommandToBindings(defaultBindings, bindingsProvider.createSubscribeBinding(locale));
+        }
+
+        addCommandToBindings(defaultBindings, bindingsProvider.createListBinding());
+
 
         return defaultBindings;
     }
