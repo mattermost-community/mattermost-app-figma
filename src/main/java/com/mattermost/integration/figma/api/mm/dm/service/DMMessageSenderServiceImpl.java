@@ -9,6 +9,7 @@ import com.mattermost.integration.figma.api.mm.kv.KVService;
 import com.mattermost.integration.figma.api.mm.kv.UserDataKVService;
 import com.mattermost.integration.figma.api.mm.kv.dto.FileInfo;
 import com.mattermost.integration.figma.api.mm.kv.dto.ProjectInfo;
+import com.mattermost.integration.figma.api.mm.server.ServerConfigurationService;
 import com.mattermost.integration.figma.api.mm.user.MMUserService;
 import com.mattermost.integration.figma.input.figma.notification.*;
 import com.mattermost.integration.figma.input.mm.user.MMUser;
@@ -38,7 +39,7 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
     private static final String AUTHOR_ID_MATCHED_COMMENTER_ID = "";
     private static final String FILE_OWNER_ID_MATCHED_COMMENTER_ID = "";
     private static final String COMMENTED_IN_YOUR_FILE = "figma.webhook.reply.notification.commented.in.your.file.label";
-    private static final String COMMENTED_IN_FILE = "commented in file";
+    private static final String COMMENTED_IN_FILE = "figma.webhook.reply.notification.commented.in.file.label";
 
     @Autowired
     private MMUserService mmUserService;
@@ -60,6 +61,8 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
     private KVService kvService;
     @Autowired
     private MessageSource messageSource;
+    @Autowired
+    private ServerConfigurationService serverConfigurationService;
 
 
     public String sendMessageToCommentAuthor(FigmaWebhookResponse figmaWebhookResponse, Context context, String fileOwnerId) {
@@ -148,15 +151,19 @@ public class DMMessageSenderServiceImpl implements DMMessageSenderService {
 
     @Override
     public void sendMessageToSubscribedChannel(String channelId, FileCommentWebhookResponse webhookResponse) {
+        String mattermostSiteUrl = webhookResponse.getContext().getMattermostSiteUrl();
+        String botAccessToken = webhookResponse.getContext().getBotAccessToken();
+        Locale serverLocale = serverConfigurationService.getServerLocale(mattermostSiteUrl, botAccessToken);
+        String message = messageSource.getMessage(COMMENTED_IN_FILE, null, serverLocale);
         Optional<DMMessageWithPropsFields> messageWithPropsFields = getMessageWithPropsFields(webhookResponse.getContext(), webhookResponse.getValues().getData(),
-                channelId, COMMENTED_IN_FILE);
+                channelId, message);
 
         if (messageWithPropsFields.isEmpty()) {
             return;
         }
 
-        DMMessageWithPropsPayload dmMessageWithPropsPayload = formMessageCreator.createMessageWithPropsPayload(messageWithPropsFields.get(), webhookResponse.getContext().getBotAccessToken(),
-                webhookResponse.getContext().getMattermostSiteUrl(), Locale.US);
+        DMMessageWithPropsPayload dmMessageWithPropsPayload = formMessageCreator.createMessageWithPropsPayload(messageWithPropsFields.get(), botAccessToken,
+                mattermostSiteUrl, serverLocale);
 
         messageService.sendDMMessage(dmMessageWithPropsPayload);
 
