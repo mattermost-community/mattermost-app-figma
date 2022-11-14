@@ -181,12 +181,13 @@ public class FileNotificationServiceImpl implements FileNotificationService {
         return refreshTokenDTO.getAccessToken();
     }
 
-    private void deleteSingleFileCommentWebhook(String webhookId, String teamId, String mmSiteUrl, String botAccessToken) {
+    public void deleteSingleFileCommentWebhook(String webhookId, String teamId, String mmSiteUrl, String botAccessToken) {
         String teamWebhookId = kvService.get(TEAM_WEBHOOK_PREFIX.concat(teamId), mmSiteUrl, botAccessToken);
         if (Objects.nonNull(teamWebhookId) && !teamWebhookId.isBlank()) {
             String webhookOwnerId = kvService.get(WEBHOOK_ID_PREFIX.concat(teamWebhookId), mmSiteUrl, botAccessToken);
             Optional<UserDataDto> webhookOwnerOptional = userDataKVService.getUserData(webhookOwnerId, mmSiteUrl, botAccessToken);
             if (webhookOwnerOptional.isEmpty()) {
+                log.error(String.format("Owner for webhook with id %s for figma team %s was not found", webhookId, teamId));
                 return;
             }
             UserDataDto webhookOwner = webhookOwnerOptional.get();

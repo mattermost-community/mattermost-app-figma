@@ -4,6 +4,7 @@ import com.mattermost.integration.figma.api.mm.user.MMUserService;
 import com.mattermost.integration.figma.input.mm.binding.Binding;
 import com.mattermost.integration.figma.input.mm.binding.BindingsDTO;
 import com.mattermost.integration.figma.input.mm.user.MMUser;
+import com.mattermost.integration.figma.input.oauth.Channel;
 import com.mattermost.integration.figma.input.oauth.InputPayload;
 import com.mattermost.integration.figma.input.oauth.User;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +42,8 @@ public class BindingServiceImpl implements BindingService {
 
         addCommandToBindings(defaultBindings, bindingsProvider.createDisconnectBinding());
 
-        if ("D".equalsIgnoreCase(payload.getContext().getChannel().getType())) {
+        Channel channel = payload.getContext().getChannel();
+        if (Objects.isNull(channel) || "D".equalsIgnoreCase(channel.getType())) {
             return defaultBindings;
         }
 

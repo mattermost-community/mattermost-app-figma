@@ -23,6 +23,14 @@
       "channel": "all"
     }
   },
+  "on_uninstall": {
+    "path": "/uninstall",
+    "expand": {
+      "acting_user_access_token": "all",
+      "oauth2_app": "all",
+      "acting_user": "all"
+    }
+  },
   "get_oauth2_connect_url": {
     "path": "/oauth2/connect",
     "expand": {
