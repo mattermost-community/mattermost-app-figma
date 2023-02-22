@@ -1,0 +1,18 @@
+<assembly>
+    <id>release</id>
+    <includeBaseDirectory>false</includeBaseDirectory>
+
+    <formats>
+        <format>zip</format>
+    </formats>
+
+    <files>
+
+        <file>
+            <source>target/figma-0.0.1-SNAPSHOT.jar</source>
+            <fileMode>0777</fileMode>
+            <outputDirectory>/</outputDirectory>
+            <destName>java-mm-figma-function.jar</destName>
+        </file>
+    </files>
+</assembly>

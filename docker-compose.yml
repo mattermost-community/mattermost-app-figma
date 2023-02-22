@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  web:
+    environment:
+      - ENCRYPTION_KEY=mySecretKey
+      - FIGMA_ROOT_URL=http://localhost:8080
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '8080:8080'
