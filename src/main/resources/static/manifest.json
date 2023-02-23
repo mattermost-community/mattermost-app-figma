@@ -4,7 +4,7 @@
   "icon": "icon.png",
   "display_name": "Figma",
   "description": "Figma integration",
-  "homepage_url": "https://github.com/prokhorind/mattermost-figma",
+  "homepage_url": "https://github.com/mattermost/mattermost-app-figma",
   "requested_permissions": [
     "act_as_bot",
     "remote_oauth2",
