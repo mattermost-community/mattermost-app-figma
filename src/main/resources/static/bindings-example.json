@@ -1,0 +1,116 @@
+{
+  "type": "ok",
+  "data": [
+    {
+      "location": "/command",
+      "bindings": [
+        {
+          "app_id": "figma",
+          "location": "figma",
+          "icon": "icon.png",
+          "label": "figma",
+          "description": "Figma commands",
+          "bindings": [
+            {
+              "app_id": "figma",
+              "location": "connect",
+              "label": "connect",
+              "submit": {
+                "path": "/connect",
+                "expand": {
+                  "app": "all",
+                  "oauth2_app": "all"
+                }
+              }
+            },
+            {
+              "app_id": "figma",
+              "location": "disconnect",
+              "label": "disconnect",
+              "submit": {
+                "path": "/disconnect",
+                "expand": {
+                  "app": "all",
+                  "oauth2_app": "all",
+                  "oauth2_user": "all",
+                  "acting_user_access_token": "all"
+                }
+              }
+            },
+            {
+              "app_id": "figma",
+              "location": "configure",
+              "label": "configure",
+              "form": {
+                "title": "Configures Figma OAuth2 App credentials",
+                "icon": "icon.png",
+                "submit": {
+                  "path": "/configure",
+                  "expand": {
+                    "acting_user_access_token": "all"
+                  }
+                },
+                "fields": [
+                  {
+                    "name": "client_id",
+                    "type": "text",
+                    "is_required": true,
+                    "label": "client-id"
+                  },
+                  {
+                    "name": "client_secret",
+                    "type": "text",
+                    "is_required": true,
+                    "label": "client-secret"
+                  }
+                ]
+              }
+            },
+            {
+              "app_id": "figma",
+              "location": "subscribe",
+              "label": "subscribe",
+              "form": {
+                "title": "Sends notification when figma file was commented",
+                "icon": "icon.png",
+                "submit": {
+                  "path": "/subscribe",
+                  "expand": {
+                    "acting_user_access_token": "all",
+                    "app": "all",
+                    "oauth2_app": "all",
+                    "oauth2_user": "all",
+                    "channel": "all"
+                  }
+                },
+                "fields": [
+                  {
+                    "name": "team_id",
+                    "type": "text",
+                    "is_required": true,
+                    "label": "team_id"
+                  }
+                ]
+              }
+            },
+            {
+              "app_id": "figma",
+              "location": "list",
+              "label": "list",
+              "submit": {
+                "path": "/subscriptions",
+                "expand": {
+                  "acting_user_access_token": "all",
+                  "app": "all",
+                  "channel": "all",
+                  "oauth2_app": "all",
+                  "oauth2_user": "all"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

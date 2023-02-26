@@ -1,0 +1,64 @@
+{
+  "app_id": "figma",
+  "version": "0.7.0",
+  "icon": "icon.png",
+  "display_name": "Figma",
+  "description": "Figma integration",
+  "homepage_url": "https://github.com/mattermost/mattermost-app-figma",
+  "requested_permissions": [
+    "act_as_bot",
+    "remote_oauth2",
+    "act_as_user",
+    "remote_webhooks"
+  ],
+  "requested_locations": [
+    "/command"
+  ],
+  "bindings": {
+    "path": "/bindings",
+    "expand": {
+      "acting_user": "all",
+      "oauth2_app": "all",
+      "oauth2_user": "all",
+      "channel": "all"
+    }
+  },
+  "on_uninstall": {
+    "path": "/uninstall",
+    "expand": {
+      "acting_user_access_token": "all",
+      "oauth2_app": "all",
+      "acting_user": "all"
+    }
+  },
+  "get_oauth2_connect_url": {
+    "path": "/oauth2/connect",
+    "expand": {
+      "acting_user": "all",
+      "oauth2_app": "all",
+      "oauth2_user": "all"
+    }
+  },
+  "on_oauth2_complete": {
+    "path": "/oauth2/complete",
+    "expand": {
+      "oauth2_app": "all",
+      "acting_user_access_token": "all",
+      "acting_user": "all"
+    }
+  },
+  "http": {
+    "root_url": "http://localhost:8080"
+  },
+  "aws_lambda": {
+    "functions": [
+      {
+        "path": "/",
+        "name": "java-mm-figma-function",
+        "handler": "com.mattermost.integration.figma.StreamLambdaHandler",
+        "runtime": "java11"
+      }
+    ]
+  },
+  "assets": []
+}
